@@ -1,0 +1,273 @@
+<!-- Reusable Modal Component -->
+<style>
+    /* Modal CSS - Include in any page */
+    :root {
+        --modal-z-index: 9000;
+        --modal-overlay-bg: rgba(22, 22, 22, 0.5);
+        --modal-bg: #ffffff;
+        --modal-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        --modal-animation-duration: 240ms;
+    }
+
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: var(--modal-overlay-bg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: var(--modal-z-index);
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity var(--modal-animation-duration) cubic-bezier(0.4, 0.14, 0.3, 1),
+                    visibility var(--modal-animation-duration) cubic-bezier(0.4, 0.14, 0.3, 1);
+    }
+
+    .modal-overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .modal {
+        background: var(--modal-bg);
+        max-width: 640px;
+        width: 90%;
+        max-height: 90vh;
+        overflow-y: auto;
+        transform: translateY(24px);
+        transition: transform var(--modal-animation-duration) cubic-bezier(0.4, 0.14, 0.3, 1);
+        box-shadow: var(--modal-shadow);
+    }
+
+    .modal-overlay.active .modal {
+        transform: translateY(0);
+    }
+
+    .modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid #e0e0e0;
+    }
+
+    .modal-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #161616;
+        margin: 0;
+    }
+
+    .modal-close {
+        background: none;
+        border: none;
+        padding: 0.5rem;
+        cursor: pointer;
+        color: #525252;
+        transition: color 70ms cubic-bezier(0.2, 0, 0.38, 0.9);
+    }
+
+    .modal-close:hover {
+        color: #161616;
+    }
+
+    .modal-close svg {
+        width: 1.25rem;
+        height: 1.25rem;
+        display: block;
+    }
+
+    .modal-body {
+        padding: 1.5rem;
+    }
+
+    .modal-body p {
+        margin: 0 0 1rem;
+        line-height: 1.5;
+        color: #525252;
+    }
+
+    .modal-body p:last-child {
+        margin-bottom: 0;
+    }
+
+    .modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        padding: 1rem 1.5rem;
+        border-top: 1px solid #e0e0e0;
+    }
+
+    /* Modal variants */
+    .modal--danger .modal-header {
+        border-left: 4px solid #da1e28;
+    }
+
+    .modal--danger .modal-close:hover {
+        color: #da1e28;
+    }
+
+    .modal--warning .modal-header {
+        border-left: 4px solid #f1c21b;
+    }
+
+    .modal--success .modal-header {
+        border-left: 4px solid #24a148;
+    }
+
+    /* Button styles */
+    .modal-btn {
+        padding: calc(0.875rem - 3px) calc(16px - 3px);
+        min-height: 3rem;
+        border: 0;
+        cursor: pointer;
+        font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        font-size: 0.875rem;
+        transition: all 70ms cubic-bezier(0.2, 0, 0.38, 0.9);
+    }
+
+    .modal-btn--secondary {
+        background: transparent;
+        border: 1px solid #0f62fe;
+        color: #0f62fe;
+    }
+
+    .modal-btn--secondary:hover {
+        background: #0f62fe;
+        color: #ffffff;
+    }
+
+    .modal-btn--primary {
+        background: #0f62fe;
+        color: #ffffff;
+    }
+
+    .modal-btn--primary:hover {
+        background: #0043ce;
+    }
+
+    .modal-btn--danger {
+        background: #da1e28;
+        color: #ffffff;
+    }
+
+    .modal-btn--danger:hover {
+        background: #ba1b23;
+    }
+
+    /* Loading state */
+    .modal-btn--loading {
+        position: relative;
+        color: transparent;
+    }
+
+    .modal-btn--loading::after {
+        content: '';
+        position: absolute;
+        width: 1rem;
+        height: 1rem;
+        top: 50%;
+        left: 50%;
+        margin: -0.5rem 0 0 -0.5rem;
+        border: 2px solid transparent;
+        border-top-color: currentColor;
+        border-radius: 50%;
+        animation: modal-spin 0.75s linear infinite;
+    }
+
+    @keyframes modal-spin {
+        to { transform: rotate(360deg); }
+    }
+
+    /* Scroll lock on body */
+    body.modal-open {
+        overflow: hidden;
+    }
+</style>
+
+<!-- Modal HTML Structure - Copy this where needed -->
+<!--
+<div class="modal-overlay" id="exampleModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title">Modal Title</h3>
+            <button class="modal-close" onclick="Modal.close('exampleModal')">
+                <svg viewBox="0 0 16 16"><path d="M12 4.7L11.3 4 8 7.3 4.7 4 4 4.7 7.3 8 4 11.3l.7.7L8 8.7l3.3 3.3.7-.7L8.7 8 12 4.7z"/></svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <p>Modal content goes here...</p>
+        </div>
+        <div class="modal-footer">
+            <button class="modal-btn modal-btn--secondary" onclick="Modal.close('exampleModal')">Cancel</button>
+            <button class="modal-btn modal-btn--primary">Confirm</button>
+        </div>
+    </div>
+</div>
+-->
+
+<!-- Modal JavaScript API -->
+<script>
+    const Modal = {
+        open: function(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.add('active');
+                document.body.classList.add('modal-open');
+            }
+        },
+
+        close: function(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.remove('active');
+                document.body.classList.remove('modal-open');
+            }
+        },
+
+        confirm: function(modalId, onConfirm) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                const confirmBtn = modal.querySelector('.modal-btn--primary, .modal-btn--danger');
+                if (confirmBtn) {
+                    const originalText = confirmBtn.textContent;
+                    confirmBtn.classList.add('modal-btn--loading');
+
+                    Promise.resolve(onConfirm())
+                        .then(function() {
+                            Modal.close(modalId);
+                        })
+                        .catch(function(error) {
+                            console.error(error);
+                        })
+                        .finally(function() {
+                            confirmBtn.classList.remove('modal-btn--loading');
+                            confirmBtn.textContent = originalText;
+                        });
+                }
+            }
+        }
+    };
+
+    // Close modal when clicking overlay
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('modal-overlay')) {
+            const modalId = e.target.id;
+            Modal.close(modalId);
+        }
+    });
+
+    // Close modal on Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            const activeModal = document.querySelector('.modal-overlay.active');
+            if (activeModal) {
+                Modal.close(activeModal.id);
+            }
+        }
+    });
+</script>

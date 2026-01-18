@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register School - Friends of Children SMS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --carbon-font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            --carbon-font-mono: 'IBM Plex Mono', 'Menlo', 'DejaVu Sans Mono', monospace;
+
+            --carbon-blue-60: #0f62fe;
+            --carbon-blue-70: #0043ce;
+            --carbon-green-50: #24a148;
+            --carbon-red-60: #da1e28;
+            --carbon-gray-100: #f4f4f4;
+            --carbon-gray-20: #e0e0e0;
+            --carbon-gray-10: #f3f3f3;
+            --carbon-white: #ffffff;
+            --carbon-black: #161616;
+            --carbon-gray-70: #525252;
+            --carbon-gray-50: #8d8d8d;
+
+            --carbon-spacing-05: 0.125rem;
+            --carbon-spacing-06: 0.25rem;
+            --carbon-spacing-07: 0.5rem;
+            --carbon-spacing-08: 0.75rem;
+            --carbon-spacing-09: 1rem;
+            --carbon-spacing-10: 1.5rem;
+            --carbon-spacing-11: 2rem;
+            --carbon-spacing-12: 3rem;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--carbon-font-family);
+            background: var(--carbon-gray-100);
+            color: var(--carbon-black);
+            line-height: 1.5;
+            min-height: 100vh;
+        }
+
+        .page-header {
+            background: var(--carbon-black);
+            color: var(--carbon-white);
+            padding: var(--carbon-spacing-12) 0;
+        }
+
+        .page-header h1 {
+            font-size: 2rem;
+            font-weight: 300;
+            margin-bottom: var(--carbon-spacing-06);
+        }
+
+        .page-header a {
+            color: var(--carbon-gray-50);
+            text-decoration: none;
+            font-size: 0.875rem;
+        }
+
+        .page-header a:hover { color: var(--carbon-white); }
+
+        .cds--grid {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 var(--carbon-spacing-09);
+        }
+
+        .form-container {
+            background: var(--carbon-white);
+            padding: var(--carbon-spacing-12);
+            margin-top: var(--carbon-spacing-11);
+            margin-bottom: var(--carbon-spacing-12);
+        }
+
+        .form-section {
+            margin-bottom: var(--carbon-spacing-11);
+            padding-bottom: var(--carbon-spacing-11);
+            border-bottom: 1px solid var(--carbon-gray-20);
+        }
+
+        .form-section:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--carbon-gray-70);
+            margin-bottom: var(--carbon-spacing-09);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--carbon-spacing-09);
+            margin-bottom: var(--carbon-spacing-09);
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            font-size: 0.75rem;
+            font-weight: 400;
+            color: var(--carbon-gray-70);
+            margin-bottom: var(--carbon-spacing-06);
+        }
+
+        input, select, textarea {
+            padding: calc(0.875rem - 3px) calc(16px - 3px);
+            min-height: 3rem;
+            border: 0;
+            border-bottom: 1px solid var(--carbon-gray-50);
+            background: var(--carbon-white);
+            font-family: var(--carbon-font-family);
+            font-size: 0.875rem;
+            color: var(--carbon-black);
+            transition: border 70ms cubic-bezier(0.2, 0, 0.38, 0.9);
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-bottom: 2px solid var(--carbon-blue-60);
+        }
+
+        input::placeholder {
+            color: var(--carbon-gray-50);
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .cds--btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: calc(0.875rem - 3px) calc(64px - 3px);
+            min-height: 3rem;
+            border: 0;
+            border-radius: 0;
+            cursor: pointer;
+            font-family: var(--carbon-font-family);
+            font-size: 0.875rem;
+            font-weight: 400;
+            text-decoration: none;
+            transition: all 70ms cubic-bezier(0.2, 0, 0.38, 0.9);
+        }
+
+        .cds--btn--primary {
+            background: var(--carbon-blue-60);
+            color: var(--carbon-white);
+        }
+
+        .cds--btn--primary:hover {
+            background: var(--carbon-blue-70);
+        }
+
+        .cds--btn--primary:disabled {
+            background: var(--carbon-gray-20);
+            color: var(--carbon-gray-50);
+            cursor: not-allowed;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: var(--carbon-spacing-09);
+            align-items: center;
+        }
+
+        .back-link {
+            color: var(--carbon-blue-60);
+            text-decoration: none;
+            font-size: 0.875rem;
+        }
+
+        .back-link:hover { text-decoration: underline; }
+
+        /* Alert */
+        .alert {
+            padding: var(--carbon-spacing-09);
+            margin-bottom: var(--carbon-spacing-09);
+            display: none;
+        }
+
+        .alert--success {
+            background: rgba(36, 161, 72, 0.1);
+            border-left: 4px solid var(--carbon-green-50);
+            color: var(--carbon-green-50);
+        }
+
+        .alert--error {
+            background: rgba(218, 30, 40, 0.1);
+            border-left: 4px solid var(--carbon-red-60);
+            color: var(--carbon-red-60);
+        }
+
+        /* Loading */
+        .cds--loading {
+            display: none;
+            width: 5rem;
+            height: 5rem;
+        }
+
+        .cds--loading__svg {
+            fill: transparent;
+            stroke: var(--carbon-blue-60);
+            stroke-width: 7;
+            stroke-linecap: butt;
+            animation: rotate 1s linear infinite;
+        }
+
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .cds--loading__stroke {
+            stroke-dasharray: 240;
+            stroke-dashoffset: 180;
+            animation: dash 1.5s ease-in-out infinite;
+        }
+
+        @keyframes dash {
+            0% { stroke-dashoffset: 240; }
+            50% { stroke-dashoffset: 60; }
+            100% { stroke-dashoffset: 240; }
+        }
+
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .loading-overlay.active { display: flex; }
+
+        .page-footer {
+            background: var(--carbon-gray-10);
+            padding: var(--carbon-spacing-10) 0;
+            margin-top: var(--carbon-spacing-12);
+            border-top: 1px solid var(--carbon-gray-20);
+            text-align: center;
+        }
+
+        .page-footer p {
+            color: var(--carbon-gray-70);
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body>
+    <header class="page-header">
+        <div class="cds--grid">
+            <h1>Friends of Children SMS</h1>
+            <a href="/">&larr; Back to Home</a>
+        </div>
+    </header>
+
+    <main class="cds--grid">
+        <div class="form-container">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2 class="section-title" style="margin: 0; padding: 0; border: none;">School Registration</h2>
+                <button type="button" class="modal-btn modal-btn--primary" onclick="Modal.open('helpModal')" style="background: transparent; color: #0f62fe; border: 1px solid #0f62fe;">
+                    Need Help?
+                </button>
+            </div>
+
+            <div id="error-alert" class="alert alert--error">
+                <strong>Error!</strong> <span id="error-message"></span>
+            </div>
+
+            <form id="school-request-form">
+                {% csrf_token %}
+
+                <div class="form-section">
+                    <h2 class="section-title">Requester Information</h2>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="requester_name">Full Name *</label>
+                            <input type="text" id="requester_name" name="requester_name" placeholder="Enter your full name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="requester_email">Email Address *</label>
+                            <input type="email" id="requester_email" name="requester_email" placeholder="your@email.com" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="requester_phone">Phone Number *</label>
+                            <input type="tel" id="requester_phone" name="requester_phone" placeholder="+256..." required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h2 class="section-title">School Information</h2>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="school_name">School Name *</label>
+                            <input type="text" id="school_name" name="school_name" placeholder="Enter school name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="school_acronym">School Acronym *</label>
+                            <input type="text" id="school_acronym" name="school_acronym" placeholder="e.g., BFA" maxlength="10" style="text-transform: uppercase;" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="school_phone">School Phone *</label>
+                            <input type="tel" id="school_phone" name="school_phone" placeholder="+256..." required>
+                        </div>
+                        <div class="form-group">
+                            <label for="school_email">School Email *</label>
+                            <input type="email" id="school_email" name="school_email" placeholder="info@school.edu" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="currency">Currency *</label>
+                            <select id="currency" name="currency" required>
+                                <option value="UGX">UGX - Ugandan Shilling</option>
+                                <option value="USD">USD - US Dollar</option>
+                                <option value="KES">KES - Kenyan Shilling</option>
+                                <option value="TZS">TZS - Tanzanian Shilling</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group full-width">
+                            <label for="school_address">School Address *</label>
+                            <textarea id="school_address" name="school_address" placeholder="Enter full address" required></textarea>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group full-width">
+                            <label for="notes">Additional Notes (Optional)</label>
+                            <textarea id="notes" name="notes" placeholder="Number of students, programs offered, etc."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="btn-group">
+                    <button type="submit" class="cds--btn cds--btn--primary" id="submit-btn">Submit Registration Request</button>
+                    <a href="/" class="back-link">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <footer class="page-footer">
+        <p>Friends of Children School Management System &copy; 2025</p>
+    </footer>
+
+    <!-- Help Modal -->
+    <div class="modal-overlay" id="helpModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Registration Help</h3>
+                <button class="modal-close" onclick="Modal.close('helpModal')">
+                    <svg viewBox="0 0 16 16"><path d="M12 4.7L11.3 4 8 7.3 4.7 4 4 4.7 7.3 8 4 11.3l.7.7L8 8.7l3.3 3.3.7-.7L8.7 8 12 4.7z"/></svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p><strong>How to Register Your School:</strong></p>
+                <p>1. Fill in your personal information (requester details)<br>
+                2. Provide your school details<br>
+                3. Submit the request for review</p>
+
+                <p><strong>After Submission:</strong></p>
+                <p>Our team will review your request. Once approved, you'll receive login credentials to set up your school.</p>
+
+                <p><strong>Need Help?</strong></p>
+                <p>Contact support@friendsofchildren.edu</p>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn modal-btn--primary" onclick="Modal.close('helpModal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div class="modal-overlay" id="successModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Request Submitted</h3>
+                <button class="modal-close" onclick="Modal.close('successModal')">
+                    <svg viewBox="0 0 16 16"><path d="M12 4.7L11.3 4 8 7.3 4.7 4 4 4.7 7.3 8 4 11.3l.7.7L8 8.7l3.3 3.3.7-.7L8.7 8 12 4.7z"/></svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p><strong>Thank you for registering!</strong></p>
+                <p>Your school registration request has been submitted successfully.</p>
+                <p>Our team will review your request and contact you within 2-3 business days.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn modal-btn--primary" onclick="window.location.href='/'">Back to Home</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal CSS -->
+    <style>
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(22, 22, 22, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 240ms cubic-bezier(0.4, 0.14, 0.3, 1);
+        }
+        .modal-overlay.active { opacity: 1; visibility: visible; }
+        .modal {
+            background: #ffffff;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        }
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .modal-title { font-size: 1.25rem; font-weight: 600; margin: 0; }
+        .modal-close { background: none; border: none; padding: 0.5rem; cursor: pointer; color: #525252; }
+        .modal-close:hover { color: #161616; }
+        .modal-body { padding: 1.5rem; }
+        .modal-body p { margin: 0 0 1rem; line-height: 1.6; color: #525252; }
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            padding: 1rem 1.5rem;
+            border-top: 1px solid #e0e0e0;
+        }
+        .modal-btn {
+            padding: calc(0.875rem - 3px) calc(16px - 3px);
+            min-height: 3rem;
+            border: 0;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.875rem;
+        }
+        .modal-btn--primary { background: #0f62fe; color: #ffffff; }
+        .modal-btn--primary:hover { background: #0043ce; }
+        body.modal-open { overflow: hidden; }
+    </style>
+
+    <script>
+        const Modal = {
+            open: function(modalId) {
+                const modal = document.getElementById(modalId);
+                if (modal) {
+                    modal.classList.add('active');
+                    document.body.classList.add('modal-open');
+                }
+            },
+            close: function(modalId) {
+                const modal = document.getElementById(modalId);
+                if (modal) {
+                    modal.classList.remove('active');
+                    document.body.classList.remove('modal-open');
+                }
+            }
+        };
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('modal-overlay')) Modal.close(e.target.id);
+        });
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                const active = document.querySelector('.modal-overlay.active');
+                if (active) Modal.close(active.id);
+            }
+        });
+    </script>
+
+    <script>
+        document.getElementById('school-request-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const submitBtn = document.getElementById('submit-btn');
+            const loading = document.getElementById('loading-overlay');
+            const errorAlert = document.getElementById('error-alert');
+
+            errorAlert.style.display = 'none';
+
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData.entries());
+
+            submitBtn.disabled = true;
+            loading.classList.add('active');
+
+            try {
+                const response = await fetch('/api/accounts/school-requests/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    Modal.open('successModal');
+                    this.reset();
+                } else {
+                    const result = await response.json();
+                    errorAlert.style.display = 'block';
+                    document.getElementById('error-message').textContent =
+                        result.detail || Object.values(result).flat().join(', ') || 'An error occurred';
+                }
+            } catch (error) {
+                errorAlert.style.display = 'block';
+                document.getElementById('error-message').textContent = 'Network error. Please try again.';
+            } finally {
+                submitBtn.disabled = false;
+                loading.classList.remove('active');
+            }
+        });
+    </script>
+</body>
+</html>
