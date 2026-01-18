@@ -53,11 +53,13 @@ class ConfigAdmin(admin.ModelAdmin):
 @admin.register(SchoolRequest)
 class SchoolRequestAdmin(admin.ModelAdmin):
     list_display = ['school_name', 'requester_name', 'requester_email',
-                    'status', 'created_at']
+                    'status', 'reviewed_by', 'created_at']
     list_filter = ['status', 'currency', 'created_at']
     search_fields = ['school_name', 'requester_name', 'requester_email']
-    readonly_fields = ['created_at', 'updated_at']
+    readonly_fields = ['created_at', 'updated_at', 'reviewed_by', 'reviewed_at']
     ordering = ['-created_at']
+
+    actions = ['approve_requests', 'reject_requests']
 
     fieldsets = (
         ('Requester Information', {'fields': (
@@ -70,3 +72,25 @@ class SchoolRequestAdmin(admin.ModelAdmin):
         ('Review', {'fields': ('status', 'reviewed_by', 'reviewed_at', 'rejection_reason')}),
         ('Timestamps', {'fields': ('created_at', 'updated_at')}),
     )
+
+    def approve_requests(self, request, queryset):
+        """Approve selected school requests."""
+        from django.utils import timezone
+        updated = queryset.filter(status='pending').update(
+            status='approved',
+            reviewed_by=request.user,
+            reviewed_at=timezone.now()
+        )
+        self.message_user(request, f'{updated} request(s) approved.')
+    approve_requests.short_description = 'Approve selected requests'
+
+    def reject_requests(self, request, queryset):
+        """Reject selected school requests."""
+        from django.utils import timezone
+        updated = queryset.filter(status='pending').update(
+            status='rejected',
+            reviewed_by=request.user,
+            reviewed_at=timezone.now()
+        )
+        self.message_user(request, f'{updated} request(s) rejected.')
+    reject_requests.short_description = 'Reject selected requests'

@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Parent - Friends of Children SMS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --carbon-font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            --carbon-blue-60: #0f62fe;
+            --carbon-blue-70: #0043ce;
+            --carbon-green-50: #24a148;
+            --carbon-red-60: #da1e28;
+            --carbon-gray-100: #f4f4f4;
+            --carbon-gray-20: #e0e0e0;
+            --carbon-white: #ffffff;
+            --carbon-black: #161616;
+            --carbon-gray-70: #525252;
+            --carbon-gray-50: #8d8d8d;
+            --carbon-spacing-06: 0.25rem;
+            --carbon-spacing-09: 1rem;
+            --carbon-spacing-10: 1.5rem;
+            --carbon-spacing-11: 2rem;
+            --carbon-spacing-12: 3rem;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--carbon-font-family);
+            background: var(--carbon-gray-100);
+            color: var(--carbon-black);
+            line-height: 1.5;
+            min-height: 100vh;
+        }
+
+        .page-header {
+            background: var(--carbon-black);
+            color: var(--carbon-white);
+            padding: var(--carbon-spacing-12) 0;
+        }
+
+        .page-header h1 {
+            font-size: 2rem;
+            font-weight: 300;
+            margin-bottom: var(--carbon-spacing-06);
+        }
+
+        .page-header a {
+            color: var(--carbon-gray-50);
+            text-decoration: none;
+            font-size: 0.875rem;
+        }
+
+        .cds--grid {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 var(--carbon-spacing-09);
+        }
+
+        .form-container {
+            background: var(--carbon-white);
+            padding: var(--carbon-spacing-12);
+            margin-top: var(--carbon-spacing-11);
+            margin-bottom: var(--carbon-spacing-12);
+        }
+
+        .form-section {
+            margin-bottom: var(--carbon-spacing-11);
+            padding-bottom: var(--carbon-spacing-11);
+            border-bottom: 1px solid var(--carbon-gray-20);
+        }
+
+        .form-section:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--carbon-gray-70);
+            margin-bottom: var(--carbon-spacing-09);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--carbon-spacing-09);
+            margin-bottom: var(--carbon-spacing-09);
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            font-size: 0.75rem;
+            font-weight: 400;
+            color: var(--carbon-gray-70);
+            margin-bottom: var(--carbon-spacing-06);
+        }
+
+        input, select {
+            padding: calc(0.875rem - 3px) calc(16px - 3px);
+            min-height: 3rem;
+            border: 0;
+            border-bottom: 1px solid var(--carbon-gray-50);
+            background: var(--carbon-white);
+            font-family: var(--carbon-font-family);
+            font-size: 0.875rem;
+            transition: border 70ms cubic-bezier(0.2, 0, 0.38, 0.9);
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-bottom: 2px solid var(--carbon-blue-60);
+        }
+
+        .cds--btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: calc(0.875rem - 3px) calc(64px - 3px);
+            min-height: 3rem;
+            border: 0;
+            cursor: pointer;
+            font-family: var(--carbon-font-family);
+            font-size: 0.875rem;
+            transition: all 70ms cubic-bezier(0.2, 0, 0.38, 0.9);
+        }
+
+        .cds--btn--primary {
+            background: var(--carbon-blue-60);
+            color: var(--carbon-white);
+        }
+
+        .cds--btn--primary:hover {
+            background: var(--carbon-blue-70);
+        }
+
+        .cds--btn--primary:disabled {
+            background: var(--carbon-gray-20);
+            color: var(--carbon-gray-50);
+            cursor: not-allowed;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: var(--carbon-spacing-09);
+            align-items: center;
+        }
+
+        .back-link {
+            color: var(--carbon-blue-60);
+            text-decoration: none;
+            font-size: 0.875rem;
+        }
+
+        .token-section {
+            background: var(--carbon-gray-10);
+            padding: var(--carbon-spacing-09);
+            margin-bottom: var(--carbon-spacing-11);
+            border: 1px solid var(--carbon-gray-20);
+        }
+
+        .token-section label {
+            color: var(--carbon-blue-60);
+            font-weight: 500;
+        }
+
+        .token-input {
+            font-family: var(--carbon-font-mono);
+            background: var(--carbon-white);
+        }
+
+        .help-text {
+            font-size: 0.75rem;
+            color: var(--carbon-gray-50);
+            margin-top: var(--carbon-spacing-06);
+        }
+
+        .alert {
+            padding: var(--carbon-spacing-09);
+            margin-bottom: var(--carbon-spacing-09);
+            display: none;
+        }
+
+        .alert--success {
+            background: rgba(36, 161, 72, 0.1);
+            border-left: 4px solid var(--carbon-green-50);
+            color: var(--carbon-green-50);
+        }
+
+        .alert--error {
+            background: rgba(218, 30, 40, 0.1);
+            border-left: 4px solid var(--carbon-red-60);
+            color: var(--carbon-red-60);
+        }
+
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .loading-overlay.active { display: flex; }
+
+        .cds--loading {
+            width: 5rem;
+            height: 5rem;
+        }
+
+        .cds--loading__svg {
+            fill: transparent;
+            stroke: var(--carbon-blue-60);
+            stroke-width: 7;
+            animation: rotate 1s linear infinite;
+        }
+
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .cds--loading__stroke {
+            stroke-dasharray: 240;
+            stroke-dashoffset: 180;
+            animation: dash 1.5s ease-in-out infinite;
+        }
+
+        @keyframes dash {
+            0% { stroke-dashoffset: 240; }
+            50% { stroke-dashoffset: 60; }
+            100% { stroke-dashoffset: 240; }
+        }
+
+        .page-footer {
+            background: var(--carbon-gray-10);
+            padding: var(--carbon-spacing-10) 0;
+            margin-top: var(--carbon-spacing-12);
+            border-top: 1px solid var(--carbon-gray-20);
+            text-align: center;
+        }
+
+        .page-footer p {
+            color: var(--carbon-gray-70);
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body>
+    <header class="page-header">
+        <div class="cds--grid">
+            <h1>Friends of Children SMS</h1>
+            <a href="/">&larr; Back to Home</a>
+        </div>
+    </header>
+
+    <main class="cds--grid">
+        <div class="form-container">
+            <div class="token-section">
+                <div class="form-group">
+                    <label for="jwt_token">Your JWT Token *</label>
+                    <input type="password" id="jwt_token" class="token-input" placeholder="Paste your JWT access token here" required>
+                    <p class="help-text">Get your token from POST /api/accounts/token/ with your credentials</p>
+                </div>
+            </div>
+
+            <div id="success-alert" class="alert alert--success">
+                <strong>Success!</strong> <span id="success-message"></span>
+            </div>
+
+            <div id="error-alert" class="alert alert--error">
+                <strong>Error!</strong> <span id="error-message"></span>
+            </div>
+
+            <form id="parent-form">
+                <div class="form-section">
+                    <h2 class="section-title">Parent Information</h2>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="first_name">First Name *</label>
+                            <input type="text" id="first_name" name="first_name" placeholder="First name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="last_name">Last Name *</label>
+                            <input type="text" id="last_name" name="last_name" placeholder="Last name" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="phone">Phone Number *</label>
+                            <input type="tel" id="phone" name="phone" placeholder="+256..." required>
+                            <p class="help-text">This must be unique per school</p>
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email Address</label>
+                            <input type="email" id="email" name="email" placeholder="parent@email.com">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="relationship">Relationship to Student *</label>
+                            <select id="relationship" name="relationship" required>
+                                <option value="">Select relationship</option>
+                                <option value="father">Father</option>
+                                <option value="mother">Mother</option>
+                                <option value="guardian">Guardian</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="password">Set Password (optional)</label>
+                            <input type="password" id="password" name="password" minlength="8">
+                            <p class="help-text">Leave empty if parent doesn't need direct login</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="btn-group">
+                    <button type="submit" class="cds--btn cds--btn--primary" id="submit-btn">Add Parent</button>
+                    <a href="/" class="back-link">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <footer class="page-footer">
+        <p>Friends of Children School Management System &copy; 2025</p>
+    </footer>
+
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="cds--loading">
+            <svg class="cds--loading__svg" viewBox="0 0 100 100">
+                <circle class="cds--loading__stroke" cx="50" cy="50" r="40"></circle>
+            </svg>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('parent-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const submitBtn = document.getElementById('submit-btn');
+            const loading = document.getElementById('loading-overlay');
+            const successAlert = document.getElementById('success-alert');
+            const errorAlert = document.getElementById('error-alert');
+            const jwtToken = document.getElementById('jwt_token').value.trim();
+
+            successAlert.style.display = 'none';
+            errorAlert.style.display = 'none';
+
+            if (!jwtToken) {
+                errorAlert.style.display = 'block';
+                document.getElementById('error-message').textContent = 'Please enter your JWT token.';
+                return;
+            }
+
+            const data = {
+                first_name: document.getElementById('first_name').value,
+                last_name: document.getElementById('last_name').value,
+                phone: document.getElementById('phone').value,
+                relationship: document.getElementById('relationship').value
+            };
+
+            const email = document.getElementById('email').value.trim();
+            if (email) data.email = email;
+
+            const password = document.getElementById('password').value.trim();
+            if (password) data.password = password;
+
+            submitBtn.disabled = true;
+            loading.classList.add('active');
+
+            try {
+                const response = await fetch('/api/accounts/onboarding/parent/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${jwtToken}`
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    successAlert.style.display = 'block';
+                    document.getElementById('success-message').textContent =
+                        `Parent ${data.first_name} ${data.last_name} has been added successfully.`;
+                    this.reset();
+                    document.getElementById('jwt_token').value = jwtToken;
+                } else {
+                    errorAlert.style.display = 'block';
+                    document.getElementById('error-message').textContent =
+                        result.detail || Object.values(result).flat().join(', ') || 'An error occurred';
+                }
+            } catch (error) {
+                errorAlert.style.display = 'block';
+                document.getElementById('error-message').textContent = 'Network error. Please try again.';
+            } finally {
+                submitBtn.disabled = false;
+                loading.classList.remove('active');
+            }
+        });
+    </script>
+</body>
+</html>

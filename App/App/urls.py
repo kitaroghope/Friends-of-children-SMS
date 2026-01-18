@@ -20,10 +20,20 @@ def register_user(request):
     """User registration page."""
     return render(request, 'register_user.html')
 
+def onboard_staff(request):
+    """Staff onboarding page for school admins."""
+    return render(request, 'onboard_staff.html')
+
+def onboard_parent(request):
+    """Parent onboarding page for school staff."""
+    return render(request, 'onboard_parent.html')
+
 urlpatterns = [
     path('', home, name='home'),
     path('register/school/', register_school, name='register_school'),
     path('register/', register_user, name='register_user'),
+    path('onboard/staff/', onboard_staff, name='onboard_staff'),
+    path('onboard/parent/', onboard_parent, name='onboard_parent'),
     path('admin/', admin.site.urls),
     path('api/', include('core.urls')),
     path('api/accounts/', include('accounts.urls')),
