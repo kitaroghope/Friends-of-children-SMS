@@ -194,6 +194,15 @@ class SchoolRequest(models.Model):
     currency = models.CharField(max_length=3, default='UGX')
     notes = models.TextField(blank=True)
 
+    # Created school (populated when approved)
+    school = models.ForeignKey(
+        School,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='requests'
+    )
+
     # Review
     reviewed_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,

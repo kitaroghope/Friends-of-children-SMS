@@ -52,6 +52,11 @@ class Student(BaseModel):
     medical_notes = models.TextField(blank=True)
     special_needs = models.TextField(blank=True)
     notes = models.TextField(blank=True)
+    # Parent/Guardian information (denormalized for quick access)
+    parent_name = models.CharField(max_length=200, blank=True)
+    parent_phone = models.CharField(max_length=20, blank=True)
+    parent_email = models.EmailField(blank=True)
+    relationship = models.CharField(max_length=50, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

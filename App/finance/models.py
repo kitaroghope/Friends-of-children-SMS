@@ -3,6 +3,7 @@ Finance models for the SMS system.
 Handles fees, invoices, payments, credits, and refunds.
 """
 
+import datetime
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.conf import settings
@@ -13,6 +14,15 @@ class FeeStructure(BaseModel):
     """
     Fee structure for a class per term.
     """
+    CATEGORY_CHOICES = [
+        ('tuition', 'Tuition'),
+        ('meals', 'Meals'),
+        ('transport', 'Transport'),
+        ('uniform', 'Uniform'),
+        ('books', 'Books'),
+        ('other', 'Other'),
+    ]
+
     school = models.ForeignKey(School, on_delete=models.CASCADE, related_name='fee_structures')
     class_obj = models.ForeignKey(
         'academic.Class',
@@ -33,7 +43,9 @@ class FeeStructure(BaseModel):
     description = models.TextField(blank=True)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     due_date = models.DateField(null=True, blank=True)
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='tuition')
     is_compulsory = models.BooleanField(default=True)
+    status = models.CharField(max_length=20, choices=[('active', 'Active'), ('inactive', 'Inactive'), ('draft', 'Draft')], default='active')
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -117,7 +129,7 @@ class Invoice(BaseModel):
     amount_paid = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     balance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
-    issue_date = models.DateField(auto_now_add=True)
+    invoice_date = models.DateField(default=datetime.date.today)
     due_date = models.DateField(null=True, blank=True)
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -143,6 +155,15 @@ class InvoiceItem(BaseModel):
     """
     Individual item in an invoice.
     """
+    FEE_TYPE_CHOICES = [
+        ('tuition', 'Tuition'),
+        ('meals', 'Meals'),
+        ('transport', 'Transport'),
+        ('uniform', 'Uniform'),
+        ('books', 'Books'),
+        ('other', 'Other'),
+    ]
+
     invoice = models.ForeignKey(
         Invoice,
         on_delete=models.CASCADE,
@@ -162,6 +183,7 @@ class InvoiceItem(BaseModel):
     )
     description = models.CharField(max_length=200)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
+    fee_type = models.CharField(max_length=20, choices=FEE_TYPE_CHOICES, default='tuition')
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -179,8 +201,15 @@ class Payment(BaseModel):
         ('cash', 'Cash'),
         ('bank', 'Bank Transfer'),
         ('mobile', 'Mobile Money'),
+        ('card', 'Card'),
         ('cheque', 'Cheque'),
         ('other', 'Other'),
+    ]
+    STATUS_CHOICES = [
+        ('completed', 'Completed'),
+        ('pending', 'Pending'),
+        ('failed', 'Failed'),
+        ('refunded', 'Refunded'),
     ]
 
     school = models.ForeignKey(School, on_delete=models.CASCADE, related_name='payments')
@@ -193,6 +222,7 @@ class Payment(BaseModel):
     payment_date = models.DateField()
     payment_method = models.CharField(max_length=20, choices=METHOD_CHOICES)
     reference = models.CharField(max_length=100, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='completed')
     received_by = models.ForeignKey(
         'staff.StaffProfile',
         on_delete=models.SET_NULL,
@@ -201,6 +231,15 @@ class Payment(BaseModel):
         related_name='payments_received'
     )
     notes = models.TextField(blank=True)
+
+    # Mobile money specific
+    mobile_phone = models.CharField(max_length=20, blank=True)
+    mobile_network = models.CharField(max_length=20, blank=True)
+
+    # Bank transfer specific
+    bank_name = models.CharField(max_length=100, blank=True)
+    bank_account = models.CharField(max_length=50, blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

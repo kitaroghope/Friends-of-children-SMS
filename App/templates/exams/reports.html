@@ -1,0 +1,822 @@
+{% extends 'base.html' %}
+
+{% block title %}Exam Reports - Friends of Children SMS{% endblock %}
+
+{% block body %}
+<style>
+    .page-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--carbon-spacing-05); }
+    .page-title h1 { margin: 0; }
+    .filters-bar { display: flex; gap: var(--carbon-spacing-04); flex-wrap: wrap; margin-bottom: var(--carbon-spacing-05); align-items: flex-end; }
+    .filters-bar .cds--select { min-width: 180px; }
+    .filters-bar .cds--text-input { min-width: 200px; }
+    .report-card { background: white; border-radius: 4px; padding: var(--carbon-spacing-05); margin-bottom: var(--carbon-spacing-05); }
+    .report-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: var(--carbon-spacing-04); padding-bottom: var(--carbon-spacing-04); border-bottom: 1px solid var(--carbon-gray-20); }
+    .report-title { font-size: 1.25rem; font-weight: 600; }
+    .report-subtitle { color: var(--carbon-gray-70); font-size: 0.875rem; margin-top: var(--carbon-spacing-02); }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--carbon-spacing-04); margin-bottom: var(--carbon-spacing-05); }
+    .stat-card { background: var(--carbon-gray-10); padding: var(--carbon-spacing-04); border-radius: 4px; text-align: center; }
+    .stat-value { font-size: 2rem; font-weight: 600; color: var(--carbon-blue-60); }
+    .stat-label { font-size: 0.75rem; color: var(--carbon-gray-70); text-transform: uppercase; letter-spacing: 0.5px; }
+    .grade-distribution { display: flex; gap: var(--carbon-spacing-03); align-items: flex-end; height: 120px; padding: var(--carbon-spacing-04) 0; }
+    .grade-bar { flex: 1; display: flex; flex-direction: column; align-items: center; gap: var(--carbon-spacing-02); }
+    .grade-fill { width: 100%; max-width: 40px; background: var(--carbon-blue-60); border-radius: 4px 4px 0 0; min-height: 4px; transition: height 0.3s ease; }
+    .grade-label { font-size: 0.75rem; font-weight: 600; }
+    .grade-count { font-size: 0.75rem; color: var(--carbon-gray-70); }
+    .report-table { margin-top: var(--carbon-spacing-04); }
+    .student-report-row { display: flex; align-items: center; padding: var(--carbon-spacing-03) 0; border-bottom: 1px solid var(--carbon-gray-20); }
+    .student-report-row:last-child { border-bottom: none; }
+    .student-info { flex: 1; display: flex; align-items: center; gap: var(--carbon-spacing-03); }
+    .student-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--carbon-blue-60); color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; }
+    .student-details h4 { margin: 0; font-weight: 500; }
+    .student-details span { font-size: 0.875rem; color: var(--carbon-gray-70); }
+    .subject-grades { display: flex; gap: var(--carbon-spacing-02); flex-wrap: wrap; }
+    .subject-grade { padding: var(--carbon-spacing-02) var(--carbon-spacing-03); background: var(--carbon-gray-10); border-radius: 4px; font-size: 0.875rem; }
+    .subject-grade.grade-a { background: rgba(36, 161, 72, 0.1); color: var(--carbon-green-60); }
+    .subject-grade.grade-b { background: rgba(26, 99, 155, 0.1); color: #1a639b; }
+    .subject-grade.grade-c { background: rgba(240, 183, 55, 0.1); color: var(--carbon-orange-60); }
+    .subject-grade.grade-f { background: rgba(218, 30, 40, 0.1); color: var(--carbon-red-60); }
+    .summary-badge { padding: var(--carbon-spacing-02) var(--carbon-spacing-03); border-radius: 4px; font-weight: 600; }
+    .summary-pass { background: rgba(36, 161, 72, 0.1); color: var(--carbon-green-60); }
+    .summary-fail { background: rgba(218, 30, 40, 0.1); color: var(--carbon-red-60); }
+    .view-toggle { display: flex; gap: var(--carbon-spacing-02); }
+    .view-btn { padding: var(--carbon-spacing-02) var(--carbon-spacing-03); border: 1px solid var(--carbon-gray-30); background: white; border-radius: 4px; cursor: pointer; }
+    .view-btn.active { background: var(--carbon-blue-60); color: white; border-color: var(--carbon-blue-60); }
+    .export-actions { display: flex; gap: var(--carbon-spacing-03); }
+    .tab-container { margin-bottom: var(--carbon-spacing-05); }
+    .tab-list { display: flex; gap: var(--carbon-spacing-02); border-bottom: 1px solid var(--carbon-gray-20); margin-bottom: var(--carbon-spacing-04); }
+    .tab-btn { padding: var(--carbon-spacing-03) var(--carbon-spacing-04); background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; font-weight: 500; color: var(--carbon-gray-70); }
+    .tab-btn:hover { color: var(--carbon-gray-100); }
+    .tab-btn.active { color: var(--carbon-blue-60); border-bottom-color: var(--carbon-blue-60); }
+    .ranking-badge { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.875rem; }
+    .ranking-1 { background: #ffd700; color: #333; }
+    .ranking-2 { background: #c0c0c0; color: #333; }
+    .ranking-3 { background: #cd7f32; color: #333; }
+    .ranking-other { background: var(--carbon-gray-20); color: var(--carbon-gray-70); }
+</style>
+
+<header class="page-header">
+    <div class="cds--grid">
+        <h1>Exam Reports</h1>
+        <a href="/exams/">&larr; Back to Exams</a>
+    </div>
+</header>
+
+<div class="main-content">
+    <div class="cds--grid">
+        <!-- Breadcrumb -->
+        <div class="breadcrumb" id="examReportsBreadcrumb">
+            <a href="/dashboard/">Home</a>
+            <span class="breadcrumb-separator">/</span>
+            <a href="/exams/">Exams</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-current">Reports</span>
+        </div>
+
+        <!-- Filters -->
+        <div class="cds--tile" style="margin-bottom: var(--carbon-spacing-05);">
+            <div class="filters-bar" style="margin-bottom: 0;">
+                <div class="cds--form-item">
+                    <label class="cds--label">Academic Year</label>
+                    <div class="cds--select">
+                        <select id="yearFilter" class="cds--select-input">
+                            <option value="">All Years</option>
+                        </select>
+                        <svg class="cds--select__arrow" viewBox="0 0 16 16" width="16" height="16"><path d="M8 11L3 6h10l-5 5z"/></svg>
+                    </div>
+                </div>
+                <div class="cds--form-item">
+                    <label class="cds--label">Term</label>
+                    <div class="cds--select">
+                        <select id="termFilter" class="cds--select-input">
+                            <option value="">All Terms</option>
+                        </select>
+                        <svg class="cds--select__arrow" viewBox="0 0 16 16" width="16" height="16"><path d="M8 11L3 6h10l-5 5z"/></svg>
+                    </div>
+                </div>
+                <div class="cds--form-item">
+                    <label class="cds--label">Class</label>
+                    <div class="cds--select">
+                        <select id="classFilter" class="cds--select-input">
+                            <option value="">All Classes</option>
+                        </select>
+                        <svg class="cds--select__arrow" viewBox="0 0 16 16" width="16" height="16"><path d="M8 11L3 6h10l-5 5z"/></svg>
+                    </div>
+                </div>
+                <div class="cds--form-item">
+                    <label class="cds--label">Exam Set</label>
+                    <div class="cds--select">
+                        <select id="examSetFilter" class="cds--select-input">
+                            <option value="">Select Exam Set...</option>
+                        </select>
+                        <svg class="cds--select__arrow" viewBox="0 0 16 16" width="16" height="16"><path d="M8 11L3 6h10l-5 5z"/></svg>
+                    </div>
+                </div>
+                <div class="cds--form-item">
+                    <button class="cds--btn cds--btn--primary" onclick="loadReport()">Generate Report</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tab-container">
+            <div class="tab-list">
+                <button class="tab-btn active" onclick="switchTab('class')">Class Report</button>
+                <button class="tab-btn" onclick="switchTab('student')">Student Report</button>
+                <button class="tab-btn" onclick="switchTab('subject')">Subject Analysis</button>
+            </div>
+        </div>
+
+        <!-- Class Report -->
+        <div id="classReportTab" class="report-tab">
+            <div class="report-card">
+                <div class="report-header">
+                    <div>
+                        <div class="report-title" id="classReportTitle">Select filters and generate report</div>
+                        <div class="report-subtitle" id="classReportSubtitle"></div>
+                    </div>
+                    <div class="export-actions" id="classExportActions" style="display: none;">
+                        <button class="cds--btn cds--btn--secondary" onclick="printReport()">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style="margin-right: 4px;"><path d="M13 5H3v6h10V5zm2 1v4h2V6h-2zM3 12h3v1H3v-1zm10-5h-1v5h1V7z"/></svg>
+                            Print
+                        </button>
+                        <button class="cds--btn cds--btn--secondary" onclick="exportPDF()">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style="margin-right: 4px;"><path d="M8 1l7 7H1l7-7zM8 4l-4 4h8l-4-4z"/></svg>
+                            PDF
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stats Grid -->
+                <div class="stats-grid" id="classStats">
+                    <div class="stat-card">
+                        <div class="stat-value" id="statStudents">-</div>
+                        <div class="stat-label">Students</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="statSubjects">-</div>
+                        <div class="stat-label">Subjects</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="statAvgScore">-</div>
+                        <div class="stat-label">Avg Score</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="statPassRate">-</div>
+                        <div class="stat-label">Pass Rate</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="statTopScore">-</div>
+                        <div class="stat-label">Top Score</div>
+                    </div>
+                </div>
+
+                <!-- Grade Distribution -->
+                <div id="gradeDistributionSection" style="margin-bottom: var(--carbon-spacing-05);">
+                    <h4 style="margin-bottom: var(--carbon-spacing-03);">Grade Distribution</h4>
+                    <div class="grade-distribution" id="gradeDistribution"></div>
+                </div>
+
+                <!-- Student Rankings Table -->
+                <div class="report-table">
+                    <h4 style="margin-bottom: var(--carbon-spacing-04);">Student Rankings</h4>
+                    <table class="cds--data-table" id="rankingTable">
+                        <thead>
+                            <tr>
+                                <th style="width: 50px;">Rank</th>
+                                <th>Student</th>
+                                <th>Adm. No.</th>
+                                <th>Total</th>
+                                <th>Average</th>
+                                <th>Grade</th>
+                                <th>Subjects</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rankingTableBody"></tbody>
+                    </table>
+                    <div id="rankingEmpty" class="empty-state" style="display: none;">
+                        <p>No data available for the selected filters.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Student Report -->
+        <div id="studentReportTab" class="report-tab" style="display: none;">
+            <div class="report-card">
+                <div class="report-header">
+                    <div>
+                        <div class="report-title" id="studentReportTitle">Select a student to view report</div>
+                        <div class="report-subtitle" id="studentReportSubtitle"></div>
+                    </div>
+                </div>
+
+                <div class="filters-bar" style="margin-bottom: var(--carbon-spacing-04);">
+                    <div class="cds--form-item">
+                        <label class="cds--label">Student</label>
+                        <div class="cds--select">
+                            <select id="studentFilter" class="cds--select-input">
+                                <option value="">Select Student...</option>
+                            </select>
+                            <svg class="cds--select__arrow" viewBox="0 0 16 16" width="16" height="16"><path d="M8 11L3 6h10l-5 5z"/></svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Student Performance Card -->
+                <div id="studentPerformance" style="display: none;">
+                    <div class="stats-grid" style="margin-bottom: var(--carbon-spacing-05);">
+                        <div class="stat-card">
+                            <div class="stat-value" id="studentTotal">-</div>
+                            <div class="stat-label">Total Marks</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="studentAverage">-</div>
+                            <div class="stat-label">Average</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="studentGrade">-</div>
+                            <div class="stat-label">Overall Grade</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="studentRank">-</div>
+                            <div class="stat-label">Class Rank</div>
+                        </div>
+                    </div>
+
+                    <!-- Subject Grades -->
+                    <h4 style="margin-bottom: var(--carbon-spacing-04);">Subject Performance</h4>
+                    <div id="studentSubjects"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Subject Analysis -->
+        <div id="subjectReportTab" class="report-tab" style="display: none;">
+            <div class="report-card">
+                <div class="report-header">
+                    <div>
+                        <div class="report-title" id="subjectReportTitle">Subject Performance Analysis</div>
+                        <div class="report-subtitle" id="subjectReportSubtitle"></div>
+                    </div>
+                </div>
+
+                <!-- Subject Selection -->
+                <div class="filters-bar" style="margin-bottom: var(--carbon-spacing-05);">
+                    <div class="cds--form-item">
+                        <label class="cds--label">Subject</label>
+                        <div class="cds--select">
+                            <select id="subjectFilter" class="cds--select-input">
+                                <option value="">Select Subject...</option>
+                            </select>
+                            <svg class="cds--select__arrow" viewBox="0 0 16 16" width="16" height="16"><path d="M8 11L3 6h10l-5 5z"/></svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Subject Stats -->
+                <div class="stats-grid" id="subjectStats">
+                    <div class="stat-card">
+                        <div class="stat-value" id="subjectEnrolled">-</div>
+                        <div class="stat-label">Students</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="subjectAvg">-</div>
+                        <div class="stat-label">Class Average</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="subjectHighest">-</div>
+                        <div class="stat-label">Highest</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="subjectLowest">-</div>
+                        <div class="stat-label">Lowest</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="subjectPassRate">-</div>
+                        <div class="stat-label">Pass Rate</div>
+                    </div>
+                </div>
+
+                <!-- Subject Grade Distribution -->
+                <div id="subjectGradeDist" style="margin-bottom: var(--carbon-spacing-05);">
+                    <h4 style="margin-bottom: var(--carbon-spacing-03);">Grade Distribution</h4>
+                    <div class="grade-distribution" id="subjectGradeDistribution"></div>
+                </div>
+
+                <!-- Subject Student List -->
+                <div class="report-table">
+                    <h4 style="margin-bottom: var(--carbon-spacing-04);">Student Performance</h4>
+                    <table class="cds--data-table" id="subjectTable">
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>Adm. No.</th>
+                                <th>Marks</th>
+                                <th>Grade</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="subjectTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading -->
+        <div id="loadingState" class="empty-state" style="display: none;">
+            <div class="cds--loading">
+                <svg class="cds--loading__svg" viewBox="0 0 100 100">
+                    <circle class="cds--loading__stroke" cx="50" cy="50" r="40"></circle>
+                </svg>
+            </div>
+            <p style="margin-top: var(--carbon-spacing-04);">Generating report...</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentTab = 'class';
+    let reportData = null;
+
+    // Grade mapping for Uganda grading
+    const gradeScale = [
+        { grade: 'D1', min: 90, color: '#24a148' },
+        { grade: 'D2', min: 85, color: '#24a148' },
+        { grade: 'C3', min: 80, color: '#1a639b' },
+        { grade: 'C4', min: 75, color: '#1a639b' },
+        { grade: 'C5', min: 70, color: '#1a639b' },
+        { grade: 'C6', min: 65, color: '#1a639b' },
+        { grade: 'P7', min: 60, color: '#f0c41b' },
+        { grade: 'P8', min: 50, color: '#f0c41b' },
+        { grade: 'F9', min: 0, color: '#da1e28' }
+    ];
+
+    async function loadFilters() {
+        // Load academic years
+        try {
+            const yearsRes = await api.get('/api/schools/academic-years/?page=1&page_size=50');
+            if (yearsRes.ok) {
+                const data = await yearsRes.json();
+                const select = document.getElementById('yearFilter');
+                data.results.forEach(year => {
+                    const opt = document.createElement('option');
+                    opt.value = year.id;
+                    opt.textContent = year.name;
+                    if (year.is_current) opt.selected = true;
+                    select.appendChild(opt);
+                });
+            }
+        } catch (e) { console.log('Could not load years'); }
+
+        // Load terms
+        try {
+            const termsRes = await api.get('/api/schools/terms/?page=1&page_size=50');
+            if (termsRes.ok) {
+                const data = await termsRes.json();
+                const select = document.getElementById('termFilter');
+                data.results.forEach(term => {
+                    const opt = document.createElement('option');
+                    opt.value = term.id;
+                    opt.textContent = term.name;
+                    select.appendChild(opt);
+                });
+            }
+        } catch (e) { console.log('Could not load terms'); }
+
+        // Load classes
+        try {
+            const classesRes = await api.get('/api/academic/classes/?page=1&page_size=100');
+            if (classesRes.ok) {
+                const data = await classesRes.json();
+                const select = document.getElementById('classFilter');
+                data.results.forEach(cls => {
+                    const opt = document.createElement('option');
+                    opt.value = cls.id;
+                    opt.textContent = cls.name;
+                    select.appendChild(opt);
+                });
+            }
+        } catch (e) { console.log('Could not load classes'); }
+
+        // Load exam sets
+        try {
+            const examsRes = await api.get('/api/exams/exam-sets/?page=1&page_size=100');
+            if (examsRes.ok) {
+                const data = await examsRes.json();
+                const select = document.getElementById('examSetFilter');
+                data.results.forEach(exam => {
+                    const opt = document.createElement('option');
+                    opt.value = exam.id;
+                    opt.textContent = `${exam.name} (${exam.class_name})`;
+                    select.appendChild(opt);
+                });
+            }
+        } catch (e) { console.log('Could not load exam sets'); }
+
+        // Load students for student report
+        try {
+            const studentsRes = await api.get('/api/students/students/?page=1&page_size=200');
+            if (studentsRes.ok) {
+                const data = await studentsRes.json();
+                const select = document.getElementById('studentFilter');
+                data.results.forEach(student => {
+                    const opt = document.createElement('option');
+                    opt.value = student.id;
+                    opt.textContent = `${student.first_name} ${student.last_name} (${student.admission_number})`;
+                    select.appendChild(opt);
+                });
+            }
+        } catch (e) { console.log('Could not load students'); }
+    }
+
+    function switchTab(tab) {
+        currentTab = tab;
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelector(`.tab-btn[onclick="switchTab('${tab}')"]`).classList.add('active');
+
+        document.querySelectorAll('.report-tab').forEach(el => el.style.display = 'none');
+        document.getElementById(`${tab}ReportTab`).style.display = 'block';
+    }
+
+    async function loadReport() {
+        const examSetId = document.getElementById('examSetFilter').value;
+        if (!examSetId) {
+            showToast('Please select an exam set', 'warning');
+            return;
+        }
+
+        document.getElementById('loadingState').style.display = 'block';
+        document.getElementById('classExportActions').style.display = 'none';
+
+        try {
+            // Get exam set details
+            const examSetRes = await api.get(`/api/exams/exam-sets/${examSetId}/`);
+            if (!examSetRes.ok) throw new Error('Failed to load exam set');
+
+            const examSet = await examSetRes.json();
+
+            // Get all results for this exam set
+            const resultsRes = await api.get(`/api/exams/results/?exam_set=${examSetId}&page=1&page_size=500`);
+            const resultsData = resultsRes.ok ? await resultsRes.json() : { results: [] };
+
+            // Get students
+            const studentsRes = await api.get(`/api/students/students/?class_id=${examSet.class_obj}&page=1&page_size=200`);
+            const studentsData = studentsRes.ok ? await studentsRes.json() : { results: [] };
+
+            reportData = {
+                examSet,
+                results: resultsData.results || [],
+                students: studentsData.results || []
+            };
+
+            if (currentTab === 'class') {
+                renderClassReport();
+            } else if (currentTab === 'student') {
+                renderStudentDropdown();
+            } else {
+                renderSubjectDropdown();
+            }
+        } catch (e) {
+            console.error('Error loading report:', e);
+            showToast('Failed to generate report', 'error');
+        }
+
+        document.getElementById('loadingState').style.display = 'none';
+    }
+
+    function renderClassReport() {
+        const { examSet, results, students } = reportData;
+        if (!results.length) {
+            showEmptyRanking();
+            return;
+        }
+
+        document.getElementById('classReportTitle').textContent = examSet.name;
+        document.getElementById('classReportSubtitle').textContent = `${examSet.class_name} | ${examSet.term_name}`;
+        document.getElementById('classExportActions').style.display = 'flex';
+
+        // Get unique subjects
+        const subjectExams = examSet.exams || [];
+
+        // Calculate student totals
+        const studentScores = {};
+        results.forEach(r => {
+            if (!studentScores[r.student]) {
+                studentScores[r.student] = { total: 0, count: 0, grades: [] };
+            }
+            if (r.marks !== null && r.marks !== undefined) {
+                studentScores[r.student].total += r.marks;
+                studentScores[r.student].count++;
+            }
+            if (r.grade) {
+                studentScores[r.student].grades.push(r.grade);
+            }
+        });
+
+        // Get student details
+        const studentMap = {};
+        students.forEach(s => {
+            studentMap[s.id] = s;
+        });
+
+        // Build ranking data
+        const rankings = Object.entries(studentScores).map(([studentId, data]) => {
+            const student = studentMap[studentId];
+            const subjectsCount = subjectExams.length;
+            const avg = subjectsCount > 0 ? ((data.total / subjectsCount)).toFixed(1) : 0;
+            const overallGrade = calculateOverallGrade(avg);
+            const passed = data.grades.filter(g => g && !g.startsWith('F')).length >= (subjectsCount * 0.5);
+
+            return {
+                student,
+                total: data.total.toFixed(0),
+                average: avg,
+                grade: overallGrade,
+                passed
+            };
+        }).sort((a, b) => parseFloat(b.total) - parseFloat(a.total));
+
+        // Stats
+        const totalStudents = rankings.length;
+        const passedCount = rankings.filter(r => r.passed).length;
+        const avgScore = rankings.reduce((sum, r) => sum + parseFloat(r.average), 0) / totalStudents;
+        const topScore = rankings[0]?.average || 0;
+
+        document.getElementById('statStudents').textContent = totalStudents;
+        document.getElementById('statSubjects').textContent = subjectExams.length;
+        document.getElementById('statAvgScore').textContent = avgScore.toFixed(1) + '%';
+        document.getElementById('statPassRate').textContent = ((passedCount / totalStudents) * 100).toFixed(0) + '%';
+        document.getElementById('statTopScore').textContent = topScore + '%';
+
+        // Grade distribution
+        renderGradeDistribution(rankings);
+
+        // Render table
+        const tbody = document.getElementById('rankingTableBody');
+        tbody.innerHTML = '';
+
+        rankings.forEach((r, idx) => {
+            const initials = `${(r.student.first_name || '')[0] || ''}${(r.student.last_name || '')[0] || ''}`.toUpperCase();
+            const rankClass = idx === 0 ? 'ranking-1' : idx === 1 ? 'ranking-2' : idx === 2 ? 'ranking-3' : 'ranking-other';
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><div class="ranking-badge ${rankClass}">${idx + 1}</div></td>
+                <td>
+                    <div class="student-info">
+                        <div class="student-avatar">${initials}</div>
+                        <div class="student-details">
+                            <h4>${r.student.first_name} ${r.student.last_name}</h4>
+                            <span>${r.student.admission_number || r.student.student_number}</span>
+                        </div>
+                    </div>
+                </td>
+                <td>${r.student.admission_number || r.student.student_number || 'N/A'}</td>
+                <td><strong>${r.total}</strong></td>
+                <td>${r.average}%</td>
+                <td><span class="summary-badge ${r.grade.startsWith('D') || r.grade.startsWith('C') ? 'summary-pass' : r.grade.startsWith('P') ? 'summary-pass' : 'summary-fail'}">${r.grade}</span></td>
+                <td>${subjectExams.length}</td>
+                <td><span class="status-badge ${r.passed ? 'status-pass' : 'status-fail'}">${r.passed ? 'Pass' : 'Fail'}</span></td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        document.getElementById('rankingTable').style.display = 'table';
+        document.getElementById('rankingEmpty').style.display = 'none';
+    }
+
+    function renderGradeDistribution(rankings) {
+        const dist = { D1: 0, D2: 0, C3: 0, C4: 0, C5: 0, C6: 0, P7: 0, P8: 0, F9: 0 };
+        rankings.forEach(r => {
+            if (r.grade && dist[r.grade] !== undefined) {
+                dist[r.grade]++;
+            }
+        });
+
+        const maxCount = Math.max(...Object.values(dist), 1);
+        const container = document.getElementById('gradeDistribution');
+        container.innerHTML = '';
+
+        const order = ['D1', 'D2', 'C3', 'C4', 'C5', 'C6', 'P7', 'P8', 'F9'];
+        order.forEach(grade => {
+            const count = dist[grade];
+            const height = (count / maxCount) * 100;
+            const gradeInfo = gradeScale.find(g => g.grade === grade);
+
+            const bar = document.createElement('div');
+            bar.className = 'grade-bar';
+            bar.innerHTML = `
+                <div class="grade-fill" style="height: ${height}%; background: ${gradeInfo?.color || '#666'};"></div>
+                <span class="grade-label">${grade}</span>
+                <span class="grade-count">${count}</span>
+            `;
+            container.appendChild(bar);
+        });
+    }
+
+    function calculateOverallGrade(avg) {
+        if (avg >= 90) return 'D1';
+        if (avg >= 85) return 'D2';
+        if (avg >= 80) return 'C3';
+        if (avg >= 75) return 'C4';
+        if (avg >= 70) return 'C5';
+        if (avg >= 65) return 'C6';
+        if (avg >= 60) return 'P7';
+        if (avg >= 50) return 'P8';
+        return 'F9';
+    }
+
+    function showEmptyRanking() {
+        document.getElementById('statStudents').textContent = '-';
+        document.getElementById('statSubjects').textContent = '-';
+        document.getElementById('statAvgScore').textContent = '-';
+        document.getElementById('statPassRate').textContent = '-';
+        document.getElementById('statTopScore').textContent = '-';
+        document.getElementById('gradeDistribution').innerHTML = '';
+        document.getElementById('rankingTable').style.display = 'none';
+        document.getElementById('rankingEmpty').style.display = 'block';
+    }
+
+    function renderStudentDropdown() {
+        const { examSet, results, students } = reportData;
+        if (!results.length) {
+            showToast('No results available', 'warning');
+            return;
+        }
+
+        document.getElementById('studentReportTitle').textContent = examSet.name;
+        document.getElementById('studentReportSubtitle').textContent = `${examSet.class_name} | ${examSet.term_name}`;
+    }
+
+    document.getElementById('studentFilter').addEventListener('change', function() {
+        const studentId = this.value;
+        if (!studentId || !reportData) return;
+
+        const { examSet, results, students } = reportData;
+        const studentResults = results.filter(r => r.student === parseInt(studentId));
+        const student = students.find(s => s.id === parseInt(studentId));
+
+        if (!student) return;
+
+        document.getElementById('studentPerformance').style.display = 'block';
+
+        // Calculate stats
+        const totalMarks = studentResults.reduce((sum, r) => sum + (r.marks || 0), 0);
+        const avgMarks = studentResults.length > 0 ? (totalMarks / studentResults.length).toFixed(1) : 0;
+        const overallGrade = calculateOverallGrade(avgMarks);
+
+        document.getElementById('studentTotal').textContent = totalMarks.toFixed(0);
+        document.getElementById('studentAverage').textContent = avgMarks + '%';
+        document.getElementById('studentGrade').textContent = overallGrade;
+
+        // Find rank
+        const studentScores = {};
+        results.forEach(r => {
+            if (!studentScores[r.student]) studentScores[r.student] = 0;
+            if (r.marks) studentScores[r.student] += r.marks;
+        });
+        const sorted = Object.entries(studentScores).sort((a, b) => b[1] - a[1]);
+        const rank = sorted.findIndex(([id]) => id === studentId) + 1;
+        document.getElementById('studentRank').textContent = `#${rank}`;
+
+        // Render subject grades
+        const container = document.getElementById('studentSubjects');
+        container.innerHTML = '';
+
+        studentResults.forEach(r => {
+            const gradeClass = r.grade?.startsWith('D') || r.grade?.startsWith('C') ? 'grade-a' :
+                              r.grade?.startsWith('P') ? 'grade-b' : 'grade-f';
+            const passed = !r.grade?.startsWith('F');
+
+            const div = document.createElement('div');
+            div.className = 'student-report-row';
+            div.innerHTML = `
+                <div class="student-info">
+                    <div class="student-avatar" style="width: 32px; height: 32px; font-size: 0.75rem;">${r.subject_name?.[0] || 'S'}</div>
+                    <div class="student-details">
+                        <h4>${r.subject_name || 'Unknown Subject'}</h4>
+                    </div>
+                </div>
+                <div class="subject-grades">
+                    <span class="subject-grade ${gradeClass}">${r.marks ?? '-'} / ${examSet.exams?.find(e => e.id === r.exam)?.max_score || 100}</span>
+                    <span class="subject-grade ${gradeClass}">${r.grade || '-'}</span>
+                    <span class="status-badge ${passed ? 'status-pass' : 'status-fail'}">${passed ? 'Pass' : 'Fail'}</span>
+                </div>
+            `;
+            container.appendChild(div);
+        });
+    });
+
+    function renderSubjectDropdown() {
+        const { examSet } = reportData;
+        document.getElementById('subjectReportTitle').textContent = examSet.name;
+        document.getElementById('subjectReportSubtitle').textContent = `${examSet.class_name} | ${examSet.term_name}`;
+
+        const select = document.getElementById('subjectFilter');
+        select.innerHTML = '<option value="">Select Subject...</option>';
+
+        if (examSet.exams) {
+            examSet.exams.forEach(exam => {
+                const opt = document.createElement('option');
+                opt.value = exam.id;
+                opt.dataset.maxScore = exam.max_score || 100;
+                opt.textContent = exam.subject_name || 'Unknown Subject';
+                select.appendChild(opt);
+            });
+        }
+    }
+
+    document.getElementById('subjectFilter').addEventListener('change', function() {
+        const examId = this.value;
+        if (!examId || !reportData) return;
+
+        const { results, students } = reportData;
+        const subjectResults = results.filter(r => r.exam === parseInt(examId));
+        const exam = reportData.examSet.exams?.find(e => e.id === parseInt(examId));
+        const maxScore = exam?.max_score || 100;
+
+        // Stats
+        const scores = subjectResults.map(r => r.marks).filter(m => m !== null && m !== undefined);
+        const avg = scores.length ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1) : 0;
+        const highest = scores.length ? Math.max(...scores) : 0;
+        const lowest = scores.length ? Math.min(...scores) : 0;
+        const passed = scores.filter(s => s >= (maxScore * 0.5)).length;
+        const passRate = scores.length ? ((passed / scores.length) * 100).toFixed(0) : 0;
+
+        document.getElementById('subjectEnrolled').textContent = subjectResults.length;
+        document.getElementById('subjectAvg').textContent = avg + '%';
+        document.getElementById('subjectHighest').textContent = highest + '%';
+        document.getElementById('subjectLowest').textContent = lowest + '%';
+        document.getElementById('subjectPassRate').textContent = passRate + '%';
+
+        // Grade distribution
+        const dist = { D1: 0, D2: 0, C3: 0, C4: 0, C5: 0, C6: 0, P7: 0, P8: 0, F9: 0 };
+        subjectResults.forEach(r => {
+            if (r.grade && dist[r.grade] !== undefined) dist[r.grade]++;
+        });
+
+        const maxCount = Math.max(...Object.values(dist), 1);
+        const container = document.getElementById('subjectGradeDistribution');
+        container.innerHTML = '';
+
+        const order = ['D1', 'D2', 'C3', 'C4', 'C5', 'C6', 'P7', 'P8', 'F9'];
+        order.forEach(grade => {
+            const count = dist[grade];
+            const height = (count / maxCount) * 100;
+            const gradeInfo = gradeScale.find(g => g.grade === grade);
+
+            const bar = document.createElement('div');
+            bar.className = 'grade-bar';
+            bar.innerHTML = `
+                <div class="grade-fill" style="height: ${height}%; background: ${gradeInfo?.color || '#666'};"></div>
+                <span class="grade-label">${grade}</span>
+                <span class="grade-count">${count}</span>
+            `;
+            container.appendChild(bar);
+        });
+
+        // Student table
+        const tbody = document.getElementById('subjectTableBody');
+        tbody.innerHTML = '';
+
+        subjectResults.sort((a, b) => (b.marks || 0) - (a.marks || 0)).forEach(r => {
+            const student = students.find(s => s.id === r.student);
+            if (!student) return;
+
+            const initials = `${(student.first_name || '')[0] || ''}${(student.last_name || '')[0] || ''}`.toUpperCase();
+            const passed = r.marks !== null && r.marks !== undefined && r.marks >= (maxScore * 0.5);
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>
+                    <div class="student-info">
+                        <div class="student-avatar" style="width: 32px; height: 32px; font-size: 0.75rem;">${initials}</div>
+                        <div class="student-details">
+                            <h4>${student.first_name} ${student.last_name}</h4>
+                        </div>
+                    </div>
+                </td>
+                <td>${student.admission_number || student.student_number || 'N/A'}</td>
+                <td>${r.marks ?? '-'} / ${maxScore}</td>
+                <td><span class="grade-badge">${r.grade || '-'}</span></td>
+                <td><span class="status-badge ${passed ? 'status-pass' : 'status-fail'}">${passed ? 'Pass' : r.marks === null || r.marks === undefined ? 'Pending' : 'Fail'}</span></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    });
+
+    function printReport() {
+        window.print();
+    }
+
+    function exportPDF() {
+        showToast('PDF export coming soon', 'info');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        Breadcrumb.render('examReportsBreadcrumb');
+        loadFilters();
+    });
+</script>
+{% endblock %}

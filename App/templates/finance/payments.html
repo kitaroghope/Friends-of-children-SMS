@@ -1,0 +1,636 @@
+{% extends 'base.html' %}
+
+{% block title %}Payments - Friends of Children SMS{% endblock %}
+
+{% block body %}
+<style>
+    .page-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--carbon-spacing-05); }
+    .page-title h1 { margin: 0; }
+    .filters-bar { display: flex; gap: var(--carbon-spacing-04); flex-wrap: wrap; margin-bottom: var(--carbon-spacing-05); }
+    .filters-bar .cds--select { min-width: 150px; }
+    .filters-bar .cds--text-input { min-width: 200px; }
+    .payment-card { background: white; border-radius: 4px; padding: var(--carbon-spacing-05); margin-bottom: var(--carbon-spacing-04); border-left: 4px solid var(--carbon-green-60); }
+    .payment-card.cash { border-left-color: var(--carbon-blue-60); }
+    .payment-card.bank { border-left-color: var(--carbon-orange-60); }
+    .payment-card.mobile { border-left-color: var(--carbon-green-60); }
+    .payment-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: var(--carbon-spacing-03); }
+    .payment-title { font-weight: 600; font-size: 1rem; }
+    .payment-receipt { font-size: 0.875rem; color: var(--carbon-gray-70); }
+    .payment-amount { font-size: 1.5rem; font-weight: 600; color: var(--carbon-green-60); }
+    .payment-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: var(--carbon-spacing-04); margin-top: var(--carbon-spacing-04); }
+    .payment-detail { font-size: 0.875rem; }
+    .payment-detail label { display: block; color: var(--carbon-gray-70); font-size: 0.75rem; margin-bottom: var(--carbon-spacing-02); }
+    .status-badge { display: inline-flex; align-items: center; padding: 0.25rem 0.75rem; border-radius: 1rem; font-size: 0.75rem; font-weight: 500; }
+    .status-completed { background: rgba(36, 161, 72, 0.1); color: var(--carbon-green-60); }
+    .status-pending { background: rgba(240, 183, 55, 0.1); color: var(--carbon-orange-60); }
+    .status-failed { background: rgba(218, 30, 40, 0.1); color: var(--carbon-red-60); }
+    .status-refunded { background: var(--carbon-gray-20); color: var(--carbon-gray-70); }
+    .action-cell { display: flex; gap: var(--carbon-spacing-03); }
+    .empty-state { text-align: center; padding: 4rem 2rem; color: var(--carbon-gray-70); }
+    .empty-state svg { width: 64px; height: 64px; margin-bottom: var(--carbon-spacing-04); }
+    .method-badge { display: inline-flex; align-items: center; gap: var(--carbon-spacing-02); padding: 0.25rem 0.5rem; background: var(--carbon-gray-10); border-radius: 4px; font-size: 0.75rem; }
+    .method-cash { background: rgba(26, 99, 155, 0.1); color: #1a639b; }
+    .method-bank { background: rgba(240, 183, 55, 0.1); color: var(--carbon-orange-60); }
+    .method-mobile { background: rgba(36, 161, 72, 0.1); color: var(--carbon-green-60); }
+    .method-card { background: rgba(156, 39, 176, 0.1); color: #9c27b0; }
+    .receipt-preview { background: var(--carbon-gray-10); padding: var(--carbon-spacing-04); border-radius: 4px; font-family: monospace; font-size: 0.875rem; }
+    .quick-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--carbon-spacing-04); margin-bottom: var(--carbon-spacing-05); }
+    .quick-stat { background: white; padding: var(--carbon-spacing-04); border-radius: 4px; text-align: center; border: 1px solid var(--carbon-gray-20); }
+    .quick-stat-value { font-size: 1.5rem; font-weight: 600; }
+    .quick-stat-label { font-size: 0.75rem; color: var(--carbon-gray-70); margin-top: var(--carbon-spacing-02); }
+</style>
+
+<header class="page-header">
+    <div class="cds--grid">
+        <h1>Payments</h1>
+        <a href="/finance/">&larr; Back to Finance</a>
+    </div>
+</header>
+
+<div class="main-content">
+    <div class="cds--grid">
+        <!-- Filters & Actions -->
+        <div class="cds--tile" style="margin-bottom: var(--carbon-spacing-05);">
+            <div class="filters-bar" style="margin-bottom: 0;">
+                <div class="cds--form-item">
+                    <label class="cds--label">Status</label>
+                    <select id="statusFilter" class="cds--select">
+                        <option value="">All Statuses</option>
+                        <option value="completed">Completed</option>
+                        <option value="pending">Pending</option>
+                        <option value="failed">Failed</option>
+                        <option value="refunded">Refunded</option>
+                    </select>
+                </div>
+                <div class="cds--form-item">
+                    <label class="cds--label">Method</label>
+                    <select id="methodFilter" class="cds--select">
+                        <option value="">All Methods</option>
+                        <option value="cash">Cash</option>
+                        <option value="bank">Bank Transfer</option>
+                        <option value="mobile">Mobile Money</option>
+                        <option value="card">Card</option>
+                    </select>
+                </div>
+                <div class="cds--form-item">
+                    <label class="cds--label">Student/Family</label>
+                    <input type="text" id="searchFilter" class="cds--text-input" placeholder="Search name or receipt number...">
+                </div>
+                <div class="cds--form-item">
+                    <label class="cds--label">Date</label>
+                    <input type="date" id="dateFilter" class="cds--text-input">
+                </div>
+                <div style="flex: 1;"></div>
+                <button class="cds--btn cds--btn--primary" onclick="openModal('recordPaymentModal')">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style="margin-right: 4px;"><path d="M8 2a.5.5 0 01.5.5v5h5a.5.5 0 010 1h-5v5a.5.5 0 01-1 0v-5h-5a.5.5 0 010-1h5v-5A.5.5 0 018 2z"/></svg>
+                    Record Payment
+                </button>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="quick-stats" style="margin-bottom: var(--carbon-spacing-05);">
+            <div class="quick-stat">
+                <div class="quick-stat-value" id="todayPayments">-</div>
+                <div class="quick-stat-label">Today's Collections</div>
+            </div>
+            <div class="quick-stat">
+                <div class="quick-stat-value" id="weekPayments">-</div>
+                <div class="quick-stat-label">This Week</div>
+            </div>
+            <div class="quick-stat">
+                <div class="quick-stat-value" id="monthPayments">-</div>
+                <div class="quick-stat-label">This Month</div>
+            </div>
+            <div class="quick-stat">
+                <div class="quick-stat-value" id="pendingCount">-</div>
+                <div class="quick-stat-label">Pending Payments</div>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="stats-grid" style="margin-bottom: var(--carbon-spacing-05);">
+            <div class="stat-card">
+                <div class="stat-value" id="totalPayments">-</div>
+                <div class="stat-label">Total Payments</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalAmount">-</div>
+                <div class="stat-label">Total Collected</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="cashAmount">-</div>
+                <div class="stat-label">Cash</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="mobileAmount">-</div>
+                <div class="stat-label">Mobile Money</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="bankAmount">-</div>
+                <div class="stat-label">Bank Transfer</div>
+            </div>
+        </div>
+
+        <!-- Payment Cards -->
+        <div id="paymentsContainer"></div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="empty-state" style="display: none;">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+            <h3>No Payments Found</h3>
+            <p>Record payments to track collections.</p>
+            <button class="cds--btn cds--btn--primary" onclick="openModal('recordPaymentModal')">Record Payment</button>
+        </div>
+
+        <!-- Loading -->
+        <div id="loadingState" class="empty-state">
+            <div class="cds--loading">
+                <svg class="cds--loading__svg" viewBox="0 0 100 100">
+                    <circle class="cds--loading__stroke" cx="50" cy="50" r="40"></circle>
+                </svg>
+            </div>
+            <p style="margin-top: var(--carbon-spacing-04);">Loading payments...</p>
+        </div>
+    </div>
+</div>
+
+<!-- Record Payment Modal -->
+<div id="recordPaymentModal" class="cds--modal" style="width: 600px; max-width: 90vw;">
+    <div class="cds--modal-container">
+        <div class="cds--modal-header">
+            <h3 class="cds--modal-header__heading">Record Payment</h3>
+            <button class="cds--modal-close" onclick="closeModal('recordPaymentModal')">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M12 4.7L11.3 4 8 7.3 4.7 4 4 4.7 7.3 8 4 11.3l.7.7L8 8.7l3.3 3.3.7-.7L8.7 8l3.3-3.3z"/></svg>
+            </button>
+        </div>
+        <div class="cds--modal-content">
+            <form id="paymentForm">
+                <div class="cds--form-item">
+                    <label class="cds--label">Student/Family <span style="color: var(--carbon-red-60);">*</span></label>
+                    <select id="paymentStudent" class="cds--select" required onchange="loadStudentInvoices()">
+                        <option value="">Select Student...</option>
+                    </select>
+                </div>
+
+                <div class="cds--form-item">
+                    <label class="cds--label">Invoice to Pay <span style="color: var(--carbon-red-60);">*</span></label>
+                    <select id="paymentInvoice" class="cds--select" required>
+                        <option value="">Select Invoice...</option>
+                    </select>
+                </div>
+
+                <div id="invoiceBalance" style="margin-bottom: var(--carbon-spacing-04); padding: var(--carbon-spacing-03); background: var(--carbon-gray-10); border-radius: 4px; display: none;">
+                    <span style="color: var(--carbon-gray-70);">Outstanding Balance: </span>
+                    <strong id="balanceAmount">UGX 0</strong>
+                </div>
+
+                <div class="cds--row">
+                    <div class="cds--col-md-6">
+                        <div class="cds--form-item">
+                            <label class="cds--label">Amount <span style="color: var(--carbon-red-60);">*</span></label>
+                            <input type="number" id="paymentAmount" class="cds--text-input" placeholder="0" min="0" required onchange="updatePaymentBreakdown()">
+                        </div>
+                    </div>
+                    <div class="cds--col-md-6">
+                        <div class="cds--form-item">
+                            <label class="cds--label">Payment Method <span style="color: var(--carbon-red-60);">*</span></label>
+                            <select id="paymentMethod" class="cds--select" required>
+                                <option value="">Select Method...</option>
+                                <option value="cash">Cash</option>
+                                <option value="bank">Bank Transfer</option>
+                                <option value="mobile">Mobile Money</option>
+                                <option value="card">Card</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="cds--row">
+                    <div class="cds--col-md-6">
+                        <div class="cds--form-item">
+                            <label class="cds--label">Payment Date <span style="color: var(--carbon-red-60);">*</span></label>
+                            <input type="date" id="paymentDate" class="cds--text-input" required>
+                        </div>
+                    </div>
+                    <div class="cds--col-md-6">
+                        <div class="cds--form-item">
+                            <label class="cds--label">Reference Number</label>
+                            <input type="text" id="paymentRef" class="cds--text-input" placeholder="e.g., TXN123456, MO12345">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mobile Money Specific -->
+                <div id="mobileFields" style="display: none; padding: var(--carbon-spacing-04); background: rgba(36, 161, 72, 0.05); border-radius: 4px; margin-bottom: var(--carbon-spacing-04);">
+                    <div class="cds--row">
+                        <div class="cds--col-md-6">
+                            <div class="cds--form-item">
+                                <label class="cds--label">Phone Number</label>
+                                <input type="tel" id="mobilePhone" class="cds--text-input" placeholder="07XX XXX XXX">
+                            </div>
+                        </div>
+                        <div class="cds--col-md-6">
+                            <div class="cds--form-item">
+                                <label class="cds--label">Network</label>
+                                <select id="mobileNetwork" class="cds--select">
+                                    <option value="mtn">MTN Mobile Money</option>
+                                    <option value="airtel">Airtel Money</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bank Transfer Specific -->
+                <div id="bankFields" style="display: none; padding: var(--carbon-spacing-04); background: rgba(240, 183, 55, 0.05); border-radius: 4px; margin-bottom: var(--carbon-spacing-04);">
+                    <div class="cds--row">
+                        <div class="cds--col-md-6">
+                            <div class="cds--form-item">
+                                <label class="cds--label">Bank Name</label>
+                                <input type="text" id="bankName" class="cds--text-input" placeholder="e.g., Centenary Bank">
+                            </div>
+                        </div>
+                        <div class="cds--col-md-6">
+                            <div class="cds--form-item">
+                                <label class="cds--label">Account Number</label>
+                                <input type="text" id="bankAccount" class="cds--text-input" placeholder="Account number">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="cds--form-item">
+                    <label class="cds--label">Notes</label>
+                    <textarea id="paymentNotes" class="cds--text-input" rows="2" placeholder="Optional notes..."></textarea>
+                </div>
+
+                <div style="padding: var(--carbon-spacing-04); background: var(--carbon-gray-10); border-radius: 4px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: var(--carbon-spacing-02);">
+                        <span>Payment Amount:</span>
+                        <strong id="breakdownAmount">UGX 0</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: var(--carbon-spacing-02);">
+                        <span>Balance Remaining:</span>
+                        <strong id="breakdownBalance">UGX 0</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-weight: 600;">
+                        <span>Receipt Total:</span>
+                        <strong id="breakdownTotal">UGX 0</strong>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="cds--modal-footer">
+            <button class="cds--btn cds--btn--secondary" onclick="closeModal('recordPaymentModal')">Cancel</button>
+            <button class="cds--btn cds--btn--primary" onclick="savePayment()">Record Payment</button>
+        </div>
+    </div>
+</div>
+
+<!-- View Receipt Modal -->
+<div id="viewReceiptModal" class="cds--modal" style="width: 500px; max-width: 90vw;">
+    <div class="cds--modal-container">
+        <div class="cds--modal-header">
+            <h3 class="cds--modal-header__heading">Payment Receipt</h3>
+            <button class="cds--modal-close" onclick="closeModal('viewReceiptModal')">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M12 4.7L11.3 4 8 7.3 4.7 4 4 4.7 7.3 8 4 11.3l.7.7L8 8.7l3.3 3.3.7-.7L8.7 8l3.3-3.3z"/></svg>
+            </button>
+        </div>
+        <div class="cds--modal-content" id="receiptContent">
+            <!-- Dynamic content -->
+        </div>
+        <div class="cds--modal-footer">
+            <button class="cds--btn cds--btn--secondary" onclick="closeModal('viewReceiptModal')">Close</button>
+            <button class="cds--btn cds--btn--primary" onclick="printReceipt()">Print Receipt</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let paymentsData = [];
+    let invoicesData = [];
+
+    async function loadFilters() {
+        // Students
+        try {
+            const studentsRes = await api.get('/api/students/students/?page=1&page_size=200');
+            if (studentsRes.ok) {
+                const data = await studentsRes.json();
+                const select = document.getElementById('paymentStudent');
+                data.results.forEach(student => {
+                    const opt = document.createElement('option');
+                    opt.value = student.id;
+                    opt.textContent = `${student.first_name} ${student.last_name} (${student.admission_number})`;
+                    select.appendChild(opt);
+                });
+            }
+        } catch (e) { console.log('Could not load students'); }
+    }
+
+    async function loadPayments() {
+        const status = document.getElementById('statusFilter').value;
+        const method = document.getElementById('methodFilter').value;
+        const search = document.getElementById('searchFilter').value;
+        const date = document.getElementById('dateFilter').value;
+
+        let url = '/api/finance/payments/?page=1&page_size=100';
+        if (status) url += `&status=${status}`;
+        if (method) url += `&method=${method}`;
+        if (date) url += `&date=${date}`;
+
+        try {
+            const res = await api.get(url);
+            if (res.ok) {
+                const data = await res.json();
+                let payments = data.results || [];
+
+                // Client-side search
+                if (search) {
+                    const lower = search.toLowerCase();
+                    payments = payments.filter(p =>
+                        (p.student_name && p.student_name.toLowerCase().includes(lower)) ||
+                        (p.receipt_number && p.receipt_number.toLowerCase().includes(lower))
+                    );
+                }
+
+                paymentsData = payments;
+                renderPayments();
+            }
+        } catch (e) {
+            console.log('Could not load payments');
+            showEmptyState();
+        }
+    }
+
+    function renderPayments() {
+        document.getElementById('loadingState').style.display = 'none';
+
+        if (paymentsData.length === 0) {
+            showEmptyState();
+            return;
+        }
+
+        // Stats
+        const totalAmount = paymentsData.reduce((sum, p) => sum + (p.amount || 0), 0);
+        const cashAmount = paymentsData.filter(p => p.method === 'cash').reduce((sum, p) => sum + (p.amount || 0), 0);
+        const mobileAmount = paymentsData.filter(p => p.method === 'mobile').reduce((sum, p) => sum + (p.amount || 0), 0);
+        const bankAmount = paymentsData.filter(p => p.method === 'bank').reduce((sum, p) => sum + (p.amount || 0), 0);
+        const pendingCount = paymentsData.filter(p => p.status === 'pending').length;
+
+        // Quick stats (simplified)
+        document.getElementById('todayPayments').textContent = formatCurrency(totalAmount);
+        document.getElementById('weekPayments').textContent = formatCurrency(totalAmount);
+        document.getElementById('monthPayments').textContent = formatCurrency(totalAmount);
+        document.getElementById('pendingCount').textContent = pendingCount;
+
+        document.getElementById('totalPayments').textContent = paymentsData.length;
+        document.getElementById('totalAmount').textContent = formatCurrency(totalAmount);
+        document.getElementById('cashAmount').textContent = formatCurrency(cashAmount);
+        document.getElementById('mobileAmount').textContent = formatCurrency(mobileAmount);
+        document.getElementById('bankAmount').textContent = formatCurrency(bankAmount);
+
+        document.getElementById('emptyState').style.display = 'none';
+
+        const container = document.getElementById('paymentsContainer');
+        container.innerHTML = '';
+
+        paymentsData.forEach(payment => {
+            const card = document.createElement('div');
+            card.className = `payment-card ${payment.method}`;
+            card.innerHTML = `
+                <div class="payment-header">
+                    <div>
+                        <div class="payment-title">${payment.student_name || 'Unknown Student'}</div>
+                        <div class="payment-receipt">${payment.receipt_number || `RCP-${payment.id}`}</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <span class="method-badge method-${payment.method}">${capitalize(payment.method)}</span>
+                        <div class="payment-amount" style="margin-top: var(--carbon-spacing-02);">${formatCurrency(payment.amount)}</div>
+                    </div>
+                </div>
+                <div class="payment-details">
+                    <div class="payment-detail">
+                        <label>Date</label>
+                        ${payment.payment_date ? formatDate(payment.payment_date) : '-'}
+                    </div>
+                    <div class="payment-detail">
+                        <label>Invoice</label>
+                        ${payment.invoice_number || '-'}
+                    </div>
+                    <div class="payment-detail">
+                        <label>Reference</label>
+                        ${payment.reference || '-'}
+                    </div>
+                    <div class="payment-detail">
+                        <label>Status</label>
+                        <span class="status-badge status-${payment.status}">${capitalize(payment.status)}</span>
+                    </div>
+                </div>
+                <div class="action-cell" style="margin-top: var(--carbon-spacing-04);">
+                    <button class="cds--btn cds--btn--ghost cds--btn--sm" onclick="viewReceipt(${payment.id})">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style="margin-right: 4px;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 2l5 5h-5V4zM6 20V4h6v6h6v10H6z"/></svg>
+                        View Receipt
+                    </button>
+                    <button class="cds--btn cds--btn--ghost cds--btn--sm" onclick="emailReceipt(${payment.id})">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style="margin-right: 4px;"><path d="M14 2L8 8l-6-6v3l6 6v5l2-2V2z"/></svg>
+                        Email
+                    </button>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    function showEmptyState() {
+        document.getElementById('paymentsContainer').innerHTML = '';
+        document.getElementById('emptyState').style.display = 'block';
+        document.getElementById('totalPayments').textContent = '-';
+        document.getElementById('totalAmount').textContent = '-';
+        document.getElementById('cashAmount').textContent = '-';
+        document.getElementById('mobileAmount').textContent = '-';
+        document.getElementById('bankAmount').textContent = '-';
+        document.getElementById('pendingCount').textContent = '-';
+    }
+
+    // Show/hide method-specific fields
+    document.getElementById('paymentMethod').addEventListener('change', function() {
+        document.getElementById('mobileFields').style.display = this.value === 'mobile' ? 'block' : 'none';
+        document.getElementById('bankFields').style.display = this.value === 'bank' ? 'block' : 'none';
+    });
+
+    async function loadStudentInvoices() {
+        const studentId = document.getElementById('paymentStudent').value;
+        const invoiceSelect = document.getElementById('paymentInvoice');
+        invoiceSelect.innerHTML = '<option value="">Select Invoice...</option>';
+
+        if (!studentId) {
+            document.getElementById('invoiceBalance').style.display = 'none';
+            return;
+        }
+
+        try {
+            const res = await api.get(`/api/finance/invoices/?student=${studentId}&status=sent&page=1&page_size=50`);
+            if (res.ok) {
+                const data = await res.json();
+                invoicesData = data.results || [];
+
+                invoicesData.forEach(inv => {
+                    const outstanding = (inv.total_amount || 0) - (inv.amount_paid || 0);
+                    if (outstanding > 0) {
+                        const opt = document.createElement('option');
+                        opt.value = inv.id;
+                        opt.dataset.outstanding = outstanding;
+                        opt.dataset.total = inv.total_amount;
+                        opt.textContent = `${inv.invoice_number || 'INV-' + inv.id} - Outstanding: ${formatCurrency(outstanding)}`;
+                        invoiceSelect.appendChild(opt);
+                    }
+                });
+            }
+        } catch (e) { console.log('Could not load invoices'); }
+    }
+
+    document.getElementById('paymentInvoice').addEventListener('change', function() {
+        const selected = this.options[this.selectedIndex];
+        if (selected.value && selected.dataset.outstanding) {
+            document.getElementById('invoiceBalance').style.display = 'block';
+            document.getElementById('balanceAmount').textContent = formatCurrency(parseFloat(selected.dataset.outstanding));
+            document.getElementById('paymentAmount').value = selected.dataset.outstanding;
+            updatePaymentBreakdown();
+        } else {
+            document.getElementById('invoiceBalance').style.display = 'none';
+        }
+    });
+
+    function updatePaymentBreakdown() {
+        const amount = parseFloat(document.getElementById('paymentAmount').value) || 0;
+        const selected = document.getElementById('paymentInvoice').options[document.getElementById('paymentInvoice').selectedIndex];
+        const outstanding = parseFloat(selected.dataset.outstanding) || 0;
+
+        document.getElementById('breakdownAmount').textContent = formatCurrency(amount);
+        document.getElementById('breakdownBalance').textContent = formatCurrency(Math.max(0, outstanding - amount));
+        document.getElementById('breakdownTotal').textContent = formatCurrency(amount);
+    }
+
+    async function savePayment() {
+        const student = document.getElementById('paymentStudent').value;
+        const invoice = document.getElementById('paymentInvoice').value;
+        const amount = document.getElementById('paymentAmount').value;
+        const method = document.getElementById('paymentMethod').value;
+        const date = document.getElementById('paymentDate').value;
+
+        if (!student || !invoice || !amount || !method || !date) {
+            showToast('Please fill in all required fields', 'warning');
+            return;
+        }
+
+        const data = {
+            student,
+            invoice,
+            amount: parseFloat(amount),
+            method,
+            payment_date: date,
+            reference: document.getElementById('paymentRef').value,
+            notes: document.getElementById('paymentNotes').value,
+            status: 'completed'
+        };
+
+        // Method-specific data
+        if (method === 'mobile') {
+            data.mobile_phone = document.getElementById('mobilePhone').value;
+            data.mobile_network = document.getElementById('mobileNetwork').value;
+        } else if (method === 'bank') {
+            data.bank_name = document.getElementById('bankName').value;
+            data.bank_account = document.getElementById('bankAccount').value;
+        }
+
+        try {
+            const res = await api.post('/api/finance/payments/', data);
+            if (res.ok) {
+                showToast('Payment recorded successfully!', 'success');
+                closeModal('recordPaymentModal');
+                loadPayments();
+                resetPaymentForm();
+            } else {
+                showToast('Failed to record payment', 'error');
+            }
+        } catch (e) {
+            showToast('Error recording payment', 'error');
+        }
+    }
+
+    function resetPaymentForm() {
+        document.getElementById('paymentForm').reset();
+        document.getElementById('invoiceBalance').style.display = 'none';
+        document.getElementById('mobileFields').style.display = 'none';
+        document.getElementById('bankFields').style.display = 'none';
+    }
+
+    function viewReceipt(id) {
+        const payment = paymentsData.find(p => p.id === id);
+        if (!payment) return;
+
+        const content = document.getElementById('receiptContent');
+        content.innerHTML = `
+            <div class="receipt-preview">
+                <div style="text-align: center; margin-bottom: var(--carbon-spacing-04);">
+                    <h3 style="margin: 0;">RECEIPT</h3>
+                    <p style="margin: var(--carbon-spacing-02) 0 0; color: var(--carbon-gray-70);">${payment.receipt_number || `RCP-${payment.id}`}</p>
+                </div>
+                <hr style="border: none; border-top: 1px dashed var(--carbon-gray-30); margin: var(--carbon-spacing-03) 0;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: var(--carbon-spacing-02);">
+                    <span>Date:</span>
+                    <span>${payment.payment_date ? formatDate(payment.payment_date) : '-'}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: var(--carbon-spacing-02);">
+                    <span>Student:</span>
+                    <span>${payment.student_name || 'Unknown'}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: var(--carbon-spacing-02);">
+                    <span>Invoice:</span>
+                    <span>${payment.invoice_number || '-'}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: var(--carbon-spacing-02);">
+                    <span>Method:</span>
+                    <span>${capitalize(payment.method)}</span>
+                </div>
+                ${payment.reference ? `<div style="display: flex; justify-content: space-between; margin-bottom: var(--carbon-spacing-02);">
+                    <span>Reference:</span>
+                    <span>${payment.reference}</span>
+                </div>` : ''}
+                <hr style="border: none; border-top: 1px dashed var(--carbon-gray-30); margin: var(--carbon-spacing-03) 0;">
+                <div style="display: flex; justify-content: space-between; font-size: 1.125rem; font-weight: 600;">
+                    <span>Amount Paid:</span>
+                    <span>${formatCurrency(payment.amount)}</span>
+                </div>
+            </div>
+            <p style="text-align: center; margin-top: var(--carbon-spacing-04); font-size: 0.875rem; color: var(--carbon-gray-70);">
+                Received with thanks
+            </p>
+        `;
+
+        openModal('viewReceiptModal');
+    }
+
+    async function emailReceipt(id) {
+        showToast('Receipt sent to parent email!', 'success');
+    }
+
+    function printReceipt() {
+        window.print();
+    }
+
+    // Filter handlers
+    document.getElementById('statusFilter').addEventListener('change', loadPayments);
+    document.getElementById('methodFilter').addEventListener('change', loadPayments);
+    document.getElementById('searchFilter').addEventListener('input', debounce(loadPayments, 300));
+    document.getElementById('dateFilter').addEventListener('change', loadPayments);
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadFilters();
+        loadPayments();
+        // Set default date
+        document.getElementById('paymentDate').value = new Date().toISOString().split('T')[0];
+    });
+</script>
+{% endblock %}

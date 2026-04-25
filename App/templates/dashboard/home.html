@@ -1,0 +1,309 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Friends of Children SMS{% endblock %}
+
+{% block body %}
+<style>
+    .welcome-banner {
+        background: linear-gradient(135deg, var(--carbon-black) 0%, #2d2d2d 100%);
+        color: var(--carbon-white);
+        padding: var(--carbon-spacing-06);
+        margin-bottom: var(--carbon-spacing-06);
+    }
+    .welcome-banner h1 { margin-bottom: var(--carbon-spacing-03); }
+    .welcome-banner p { color: var(--carbon-gray-40); margin: 0; }
+    .setup-alert {
+        background: rgba(241, 194, 27, 0.1);
+        border-left: 4px solid var(--carbon-yellow-50);
+        padding: var(--carbon-spacing-05);
+        margin-bottom: var(--carbon-spacing-06);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .setup-alert-content h4 { margin-bottom: var(--carbon-spacing-02); color: #8e6a00; }
+    .setup-alert-content p { margin: 0; font-size: 0.875rem; color: var(--carbon-gray-70); }
+    .card-icon { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; margin-bottom: var(--carbon-spacing-04); border-radius: 50%; }
+    .card-icon svg { width: 24px; height: 24px; }
+    .card-icon--blue { background: rgba(15, 98, 254, 0.1); color: var(--carbon-blue-60); }
+    .card-icon--green { background: rgba(36, 161, 72, 0.1); color: var(--carbon-green-60); }
+    .card-icon--purple { background: rgba(142, 62, 173, 0.1); color: var(--carbon-purple-60); }
+    .card-icon--cyan { background: rgba(17, 146, 232, 0.1); color: var(--carbon-cyan-50); }
+    .card-title { font-size: 1rem; font-weight: 600; margin-bottom: var(--carbon-spacing-02); }
+    .card-desc { font-size: 0.875rem; color: var(--carbon-gray-70); margin: 0; }
+</style>
+
+<div class="main-content">
+    <div class="cds--grid">
+        <!-- Breadcrumb -->
+        <div class="breadcrumb">
+            <a href="/dashboard/">Home</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-current">Dashboard</span>
+        </div>
+
+        <div class="welcome-banner" style="margin-top: var(--carbon-spacing-05);">
+            <h1 id="welcomeName">Welcome!</h1>
+            <p id="schoolName">Loading school information...</p>
+        </div>
+        <!-- Complete Profile Alert (shown if staff profile incomplete) -->
+        <div class="setup-alert" id="profileAlert" style="display: none; background: rgba(15, 98, 254, 0.1); border-left-color: var(--carbon-blue-60);">
+            <div class="setup-alert-content">
+                <h4 style="color: var(--carbon-blue-60);">Complete Your Profile</h4>
+                <p>Please update your staff profile with your complete information.</p>
+            </div>
+            <a href="/staff/profile/" class="cds--btn cds--btn--primary">Update Profile</a>
+        </div>
+
+        <!-- Setup Alert (shown if school not set up) -->
+        <div class="setup-alert" id="setupAlert" style="display: none;">
+            <div class="setup-alert-content">
+                <h4>School Setup Required</h4>
+                <p>Complete the setup wizard to configure academic years, terms, classes, and subjects.</p>
+            </div>
+            <a href="/setup/wizard/" class="cds--btn cds--btn--primary">Start Setup</a>
+        </div>
+
+        <!-- Stats -->
+        <section class="section">
+            <div class="stats-grid">
+                <div class="stat-tile cds--tile">
+                    <div class="stat-number" id="studentCount">-</div>
+                    <div class="stat-label">Students</div>
+                </div>
+                <div class="stat-tile cds--tile">
+                    <div class="stat-number" id="staffCount">-</div>
+                    <div class="stat-label">Staff</div>
+                </div>
+                <div class="stat-tile cds--tile">
+                    <div class="stat-number" id="parentCount">-</div>
+                    <div class="stat-label">Parents</div>
+                </div>
+                <div class="stat-tile cds--tile">
+                    <div class="stat-number" id="classCount">-</div>
+                    <div class="stat-label">Classes</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Quick Actions -->
+        <section class="section">
+            <h2 class="section-title">Quick Actions</h2>
+            <div class="cds--row">
+                <div class="cds--col cds--col-md-4 cds--col-lg-4">
+                    <a href="/students/add/" class="cds--tile cds--tile--clickable">
+                        <div class="card-icon card-icon--blue">
+                            <svg viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="5" r="3"/><path d="M3 18v-2a5 5 0 0114 0v2H3z"/></svg>
+                        </div>
+                        <h3 class="card-title">Add Student</h3>
+                        <p class="card-desc">Register a new student</p>
+                    </a>
+                </div>
+                <div class="cds--col cds--col-md-4 cds--col-lg-4">
+                    <a href="/staff/add/" class="cds--tile cds--tile--clickable">
+                        <div class="card-icon card-icon--green">
+                            <svg viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="4" r="2.5"/><path d="M3 17v-2a7 7 0 0114 0v2H3z"/></svg>
+                        </div>
+                        <h3 class="card-title">Add Staff</h3>
+                        <p class="card-desc">Register new staff member</p>
+                    </a>
+                </div>
+                <div class="cds--col cds--col-md-4 cds--col-lg-4">
+                    <a href="/parents/add/" class="cds--tile cds--tile--clickable">
+                        <div class="card-icon card-icon--purple">
+                            <svg viewBox="0 0 20 20" fill="currentColor"><circle cx="6" cy="4" r="2"/><circle cx="14" cy="4" r="2"/><path d="M2 18v-2a8 8 0 0116 0v2H2z"/></svg>
+                        </div>
+                        <h3 class="card-title">Add Parent</h3>
+                        <p class="card-desc">Register parent/guardian</p>
+                    </a>
+                </div>
+                <div class="cds--col cds--col-md-4 cds--col-lg-4">
+                    <a href="/exams/results/" class="cds--tile cds--tile--clickable">
+                        <div class="card-icon card-icon--cyan">
+                            <svg viewBox="0 0 20 20" fill="currentColor"><path d="M3 3h14v14H3V3zm2 2v10h10V5H5z"/></svg>
+                        </div>
+                        <h3 class="card-title">Enter Marks</h3>
+                        <p class="card-desc">Record exam results</p>
+                    </a>
+                </div>
+                <div class="cds--col cds--col-md-4 cds--col-lg-4">
+                    <a href="/finance/payments/" class="cds--tile cds--tile--clickable">
+                        <div class="card-icon card-icon--green">
+                            <svg viewBox="0 0 20 20" fill="currentColor"><path d="M3 4h14v12H3V4zm2 2v8h10V6H5z"/></svg>
+                        </div>
+                        <h3 class="card-title">Record Payment</h3>
+                        <p class="card-desc">Process fee payment</p>
+                    </a>
+                </div>
+                <div class="cds--col cds--col-md-4 cds--col-lg-4">
+                    <a href="/reports/" class="cds--tile cds--tile--clickable">
+                        <div class="card-icon card-icon--blue">
+                            <svg viewBox="0 0 20 20" fill="currentColor"><path d="M3 3h14v14H3V3zm2 2v10h10V5H5z"/></svg>
+                        </div>
+                        <h3 class="card-title">View Reports</h3>
+                        <p class="card-desc">Academic & financial reports</p>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Admin Section -->
+        <section class="section" id="adminSection">
+            <h2 class="section-title">Administration</h2>
+            <div class="cds--row">
+                <div class="cds--col cds--col-md-4 cds--col-lg-4">
+                    <a href="/academic/classes/" class="cds--tile cds--tile--clickable">
+                        <div class="card-icon card-icon--blue">
+                            <svg viewBox="0 0 20 20" fill="currentColor"><path d="M3 4h14v12H3V4z"/></svg>
+                        </div>
+                        <h3 class="card-title">Manage Classes</h3>
+                        <p class="card-desc">Classes, sections, structures</p>
+                    </a>
+                </div>
+                <div class="cds--col cds--col-md-4 cds--col-lg-4">
+                    <a href="/academic/subjects/" class="cds--tile cds--tile--clickable">
+                        <div class="card-icon card-icon--purple">
+                            <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 2L3 7l7 5 7-5-7-5zM3 9l7 5 7-5M3 15v-3l7 5 7-5v3l-7 5-7-5z"/></svg>
+                        </div>
+                        <h3 class="card-title">Manage Subjects</h3>
+                        <p class="card-desc">Subjects and curriculum</p>
+                    </a>
+                </div>
+                <div class="cds--col cds--col-md-4 cds--col-lg-4">
+                    <a href="/finance/fees/" class="cds--tile cds--tile--clickable">
+                        <div class="card-icon card-icon--green">
+                            <svg viewBox="0 0 20 20" fill="currentColor"><path d="M3 4h14v2H3V4zm0 12h14v2H3v-2z"/></svg>
+                        </div>
+                        <h3 class="card-title">Fee Structures</h3>
+                        <p class="card-desc">Configure school fees</p>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Recent Activity -->
+        <section class="section">
+            <h2 class="section-title">Navigation</h2>
+            <div class="cds--row">
+                <div class="cds--col cds--col-md-4 cds--col-lg-4">
+                    <div class="cds--tile">
+                        <h3 class="card-title" style="margin-bottom: var(--carbon-spacing-04);">Students</h3>
+                        <a href="/students/" class="cds--btn cds--btn--tertiary cds--btn--sm" style="width: 100%;">View All Students</a>
+                    </div>
+                </div>
+                <div class="cds--col cds--col-md-4 cds--col-lg-4">
+                    <div class="cds--tile">
+                        <h3 class="card-title" style="margin-bottom: var(--carbon-spacing-04);">Staff</h3>
+                        <a href="/staff/" class="cds--btn cds--btn--tertiary cds--btn--sm" style="width: 100%;">View All Staff</a>
+                    </div>
+                </div>
+                <div class="cds--col cds--col-md-4 cds--col-lg-4">
+                    <div class="cds--tile">
+                        <h3 class="card-title" style="margin-bottom: var(--carbon-spacing-04);">Parents</h3>
+                        <a href="/parents/" class="cds--btn cds--btn--tertiary cds--btn--sm" style="width: 100%;">View All Parents</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+
+<script>
+async function loadDashboard() {
+    // First check if user has a token
+    if (!Auth.isLoggedIn()) {
+        window.location.href = '/login/';
+        return;
+    }
+
+    // Get user - fetch from API if not in localStorage
+    let user = Auth.getUser();
+    if (!user) {
+        try {
+            const res = await api.get('/api/accounts/users/me/');
+            if (res.ok) {
+                user = await res.json();
+                Auth.setUser(user);
+            } else if (res.status === 401) {
+                // Token expired, try refresh
+                const refreshed = await Auth.refresh();
+                if (refreshed) {
+                    // Token refreshed, fetch user again
+                    const retryRes = await api.get('/api/accounts/users/me/');
+                    if (retryRes.ok) {
+                        user = await retryRes.json();
+                        Auth.setUser(user);
+                    } else {
+                        Auth.logout();
+                        return;
+                    }
+                } else {
+                    Auth.logout();
+                    return;
+                }
+            } else {
+                // Token invalid
+                Auth.logout();
+                return;
+            }
+        } catch (e) {
+            console.log('Error fetching user:', e);
+            Auth.logout();
+            return;
+        }
+    }
+
+    // Update welcome message
+    const firstName = user.first_name || user.email.split('@')[0];
+    document.getElementById('welcomeName').textContent = `Welcome, ${firstName}!`;
+
+    // Load school info and stats in parallel
+    try {
+        const [schoolRes, setupStatusRes, studentsRes, staffRes, parentsRes, classesRes] = await Promise.all([
+            api.get('/api/core/schools/').then(r => r.json()).catch(() => ({ results: [] })),
+            api.get('/api/accounts/setup/').then(r => r.json()).catch(() => ({})),
+            api.get('/api/students/students/').then(r => r.json()).catch(() => ({ count: 0 })),
+            api.get('/api/staff/staff/').then(r => r.json()).catch(() => ({ count: 0 })),
+            api.get('/api/parents/parents/').then(r => r.json()).catch(() => ({ count: 0 })),
+            api.get('/api/academic/classes/').then(r => r.json()).catch(() => ({ count: 0 }))
+        ]);
+
+        const school = schoolRes.results?.[0] || null;
+        if (school) {
+            document.getElementById('schoolName').textContent = school.name;
+
+            // Check if school needs setup
+            const needsSetup = !setupStatusRes.has_academic_year;
+            if (needsSetup) {
+                document.getElementById('setupAlert').style.display = 'flex';
+            }
+        } else {
+            document.getElementById('schoolName').textContent = 'No school configured yet';
+            document.getElementById('setupAlert').style.display = 'flex';
+        }
+
+        // Check if current user's staff profile is incomplete
+        const currentUserEmail = user.email;
+        const staffList = staffRes.results || [];
+        const myStaffProfile = staffList.find(s => s.email === currentUserEmail || s.user_email === currentUserEmail);
+
+        if (myStaffProfile) {
+            const isIncomplete = !myStaffProfile.phone || !myStaffProfile.department || !myStaffProfile.position;
+            if (isIncomplete) {
+                document.getElementById('profileAlert').style.display = 'flex';
+            }
+        }
+
+        document.getElementById('studentCount').textContent = studentsRes.count || 0;
+        document.getElementById('staffCount').textContent = staffRes.count || 0;
+        document.getElementById('parentCount').textContent = parentsRes.count || 0;
+        document.getElementById('classCount').textContent = classesRes.count || 0;
+
+    } catch (e) {
+        console.log('Could not load dashboard data');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', loadDashboard);
+</script>
+{% endblock %}

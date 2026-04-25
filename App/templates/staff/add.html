@@ -1,0 +1,210 @@
+{% extends 'base.html' %}
+
+{% block title %}Add Staff - Friends of Children SMS{% endblock %}
+
+{% block body %}
+<style>
+    .form-section { margin-bottom: var(--carbon-spacing-06); }
+    .form-section h3 { margin-bottom: var(--carbon-spacing-04); padding-bottom: var(--carbon-spacing-03); border-bottom: 1px solid var(--carbon-gray-20); }
+    .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--carbon-spacing-04); }
+    .form-actions { display: flex; gap: var(--carbon-spacing-04); margin-top: var(--carbon-spacing-06); padding-top: var(--carbon-spacing-05); border-top: 1px solid var(--carbon-gray-20); }
+    .error-message { background: rgba(218, 30, 40, 0.1); border-left: 3px solid var(--carbon-red-60); color: var(--carbon-red-60); padding: var(--carbon-spacing-04); margin-bottom: var(--carbon-spacing-05); display: none; }
+    .success-message { background: rgba(36, 161, 72, 0.1); border-left: 3px solid var(--carbon-green-60); color: var(--carbon-green-60); padding: var(--carbon-spacing-04); margin-bottom: var(--carbon-spacing-05); display: none; }
+</style>
+
+<div class="main-content">
+    <div class="cds--grid">
+        <!-- Breadcrumb -->
+        <div class="breadcrumb" id="staffBreadcrumb">
+            <a href="/dashboard/">Home</a>
+            <span class="breadcrumb-separator">/</span>
+            <a href="/staff/">Staff</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-current">Add Staff</span>
+        </div>
+
+        <div id="errorMessage" class="error-message"></div>
+        <div id="successMessage" class="success-message"></div>
+
+        <form id="staffForm">
+            {% csrf_token %}
+
+            <!-- Personal Information -->
+            <div class="form-section cds--tile">
+                <h3>Personal Information</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="first_name">First Name *</label>
+                        <input type="text" id="first_name" name="first_name" class="cds--text-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="last_name">Last Name *</label>
+                        <input type="text" id="last_name" name="last_name" class="cds--text-input" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="gender">Gender</label>
+                        <div class="cds--select">
+                            <select id="gender" name="gender" class="cds--select-input">
+                                <option value="">Select...</option>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                            </select>
+                            <svg class="cds--select__arrow" viewBox="0 0 16 16" width="16" height="16"><path d="M8 11L3 6h10l-5 5z"/></svg>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="date_of_birth">Date of Birth</label>
+                        <input type="date" id="date_of_birth" name="date_of_birth" class="cds--text-input">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="email">Email</label>
+                        <input type="email" id="email" name="email" class="cds--text-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="phone">Phone *</label>
+                        <input type="text" id="phone" name="phone" class="cds--text-input" placeholder="e.g., 2567XXXXXXXX" required>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Employment Information -->
+            <div class="form-section cds--tile">
+                <h3>Employment Information</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="department">Department *</label>
+                        <div class="cds--select">
+                            <select id="department" name="department" class="cds--select-input" required>
+                                <option value="">Select...</option>
+                                <option value="Administration">Administration</option>
+                                <option value="Academic">Academic</option>
+                                <option value="Finance">Finance</option>
+                                <option value="Examinations">Examinations</option>
+                                <option value="Sports">Sports</option>
+                                <option value="Boarding">Boarding</option>
+                            </select>
+                            <svg class="cds--select__arrow" viewBox="0 0 16 16" width="16" height="16"><path d="M8 11L3 6h10l-5 5z"/></svg>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="position">Position *</label>
+                        <input type="text" id="position" name="position" class="cds--text-input" required placeholder="e.g., Class Teacher, Head Teacher">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="staff_number">Staff Number</label>
+                        <input type="text" id="staff_number" name="staff_number" class="cds--text-input" placeholder="Auto-generated if empty">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="date_joined">Date Joined *</label>
+                        <input type="date" id="date_joined" name="date_joined" class="cds--text-input" required>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Address -->
+            <div class="form-section cds--tile">
+                <h3>Address</h3>
+                <div class="form-row">
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                        <label class="form-label" for="address">Address</label>
+                        <textarea id="address" name="address" class="cds--text-input" rows="2"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Emergency Contact -->
+            <div class="form-section cds--tile">
+                <h3>Emergency Contact</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="emergency_contact">Contact Name & Phone</label>
+                        <input type="text" id="emergency_contact" name="emergency_contact" class="cds--text-input" placeholder="e.g., John Doe - 2567XXXXXXXX">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Additional Notes -->
+            <div class="form-section cds--tile">
+                <h3>Additional Notes</h3>
+                <div class="form-row">
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                        <label class="form-label" for="notes">Notes</label>
+                        <textarea id="notes" name="notes" class="cds--text-input" rows="3" placeholder="Any additional information..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="form-actions">
+                <a href="/staff/" class="cds--btn cds--btn--secondary">Cancel</a>
+                <button type="submit" class="cds--btn cds--btn--primary" id="submitBtn">
+                    <span id="submitText">Add Staff</span>
+                    <span id="submitLoading" style="display: none;">
+                        <span class="cds--loading__svg" style="width:16px;height:16px;margin:0"><circle class="cds--loading__stroke" cx="8" cy="8" r="6"/></span> Saving...
+                    </span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Set default date to today
+    document.addEventListener('DOMContentLoaded', () => {
+        Breadcrumb.render('staffBreadcrumb');
+        document.getElementById('date_joined').value = new Date().toISOString().split('T')[0];
+    });
+
+    document.getElementById('staffForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const formData = new FormData(e.target);
+        const data = Object.fromEntries(formData.entries());
+
+        // Show loading state
+        document.getElementById('submitText').style.display = 'none';
+        document.getElementById('submitLoading').style.display = 'inline-flex';
+        document.getElementById('submitBtn').disabled = true;
+        document.getElementById('errorMessage').style.display = 'none';
+
+        try {
+            const res = await api.post('/api/staff/staff/', data);
+
+            if (res.ok) {
+                const staff = await res.json();
+                document.getElementById('successMessage').textContent = `Staff member "${staff.first_name} ${staff.last_name}" added successfully!`;
+                document.getElementById('successMessage').style.display = 'block';
+
+                // Scroll to top
+                window.scrollTo(0, 0);
+
+                // Reset form
+                e.target.reset();
+                document.getElementById('date_joined').value = new Date().toISOString().split('T')[0];
+
+                // Optionally redirect after delay
+                setTimeout(() => {
+                    window.location.href = '/staff/';
+                }, 1500);
+            } else {
+                const error = await res.json();
+                throw new Error(error.detail || Object.values(error).flat().join(', ') || 'Failed to add staff');
+            }
+        } catch (e) {
+            document.getElementById('errorMessage').textContent = e.message;
+            document.getElementById('errorMessage').style.display = 'block';
+            window.scrollTo(0, 0);
+        } finally {
+            document.getElementById('submitText').style.display = 'inline';
+            document.getElementById('submitLoading').style.display = 'none';
+            document.getElementById('submitBtn').disabled = false;
+        }
+    });
+</script>
+{% endblock %}

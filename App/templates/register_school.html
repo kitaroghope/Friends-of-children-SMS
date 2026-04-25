@@ -16,6 +16,7 @@
             --carbon-blue-70: #0043ce;
             --carbon-green-50: #24a148;
             --carbon-red-60: #da1e28;
+            --carbon-cyan-60: #1192e8;
             --carbon-gray-100: #f4f4f4;
             --carbon-gray-20: #e0e0e0;
             --carbon-gray-10: #f3f3f3;
@@ -77,6 +78,45 @@
             margin-bottom: var(--carbon-spacing-12);
         }
 
+        .form-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--carbon-spacing-11);
+            padding-bottom: var(--carbon-spacing-09);
+            border-bottom: 1px solid var(--carbon-gray-20);
+        }
+
+        .form-header h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .help-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--carbon-spacing-06);
+            padding: var(--carbon-spacing-06) var(--carbon-spacing-09);
+            background: transparent;
+            border: 1px solid var(--carbon-blue-60);
+            color: var(--carbon-blue-60);
+            font-family: var(--carbon-font-family);
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 70ms cubic-bezier(0.2, 0, 0.38, 0.9);
+        }
+
+        .help-btn:hover {
+            background: var(--carbon-blue-60);
+            color: var(--carbon-white);
+        }
+
+        .help-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
         .form-section {
             margin-bottom: var(--carbon-spacing-11);
             padding-bottom: var(--carbon-spacing-11);
@@ -90,10 +130,19 @@
         }
 
         .section-title {
-            font-size: 1.25rem;
+            font-size: 1.125rem;
             font-weight: 600;
             color: var(--carbon-gray-70);
             margin-bottom: var(--carbon-spacing-09);
+            display: flex;
+            align-items: center;
+            gap: var(--carbon-spacing-06);
+        }
+
+        .section-title svg {
+            width: 20px;
+            height: 20px;
+            color: var(--carbon-cyan-60);
         }
 
         .form-row {
@@ -112,11 +161,76 @@
             grid-column: 1 / -1;
         }
 
+        .form-label-wrapper {
+            display: flex;
+            align-items: center;
+            gap: var(--carbon-spacing-06);
+            margin-bottom: var(--carbon-spacing-06);
+        }
+
         label {
             font-size: 0.75rem;
             font-weight: 400;
             color: var(--carbon-gray-70);
-            margin-bottom: var(--carbon-spacing-06);
+        }
+
+        .tooltip-trigger {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--carbon-gray-20);
+            color: var(--carbon-gray-70);
+            cursor: help;
+            font-size: 0.625rem;
+            font-weight: bold;
+            position: relative;
+        }
+
+        .tooltip-trigger:hover .tooltip-content,
+        .tooltip-trigger:focus .tooltip-content {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .tooltip-content {
+            position: absolute;
+            bottom: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%) translateY(-4px);
+            background: var(--carbon-black);
+            color: var(--carbon-white);
+            padding: var(--carbon-spacing-07) var(--carbon-spacing-09);
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 400;
+            white-space: nowrap;
+            z-index: 100;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 110ms cubic-bezier(0.2, 0, 0.38, 0.9);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            line-height: 1.4;
+        }
+
+        .tooltip-content::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 4px solid transparent;
+            border-top-color: var(--carbon-black);
+        }
+
+        .form-hint {
+            font-size: 0.75rem;
+            color: var(--carbon-gray-50);
+            margin-top: var(--carbon-spacing-05);
+            font-style: italic;
         }
 
         input, select, textarea {
@@ -143,6 +257,24 @@
         textarea {
             min-height: 100px;
             resize: vertical;
+        }
+
+        .cds--select {
+            position: relative;
+        }
+
+        .cds--select-input {
+            appearance: none;
+            padding-right: 2.5rem;
+        }
+
+        .cds--select__arrow {
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+            fill: var(--carbon-gray-70);
         }
 
         .cds--btn {
@@ -281,8 +413,12 @@
     <main class="cds--grid">
         <div class="form-container">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                <h2 class="section-title" style="margin: 0; padding: 0; border: none;">School Registration</h2>
-                <button type="button" class="modal-btn modal-btn--primary" onclick="Modal.open('helpModal')" style="background: transparent; color: #0f62fe; border: 1px solid #0f62fe;">
+                <h2 class="section-title" style="margin: 0; padding: 0; border: none; font-size: 1.5rem;">
+                    <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10.75 2.75a.75.75 0 00-1.5 0v8.614L6.295 8.235a.75.75 0 10-1.09 1.03l4.25 4.5a.75.75 0 001.09 0l4.25-4.5a.75.75 0 00-1.09-1.03l-2.955 3.129V2.75z"/><path d="M3.5 12.75a.75.75 0 00-1.5 0v2.5A2.75 2.75 0 004.75 18h10.5A2.75 2.75 0 0018 15.25v-2.5a.75.75 0 00-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5z"/></svg>
+                    School Registration
+                </h2>
+                <button type="button" class="help-btn" onclick="Modal.open('helpModal')">
+                    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 10.5a1.5 1.5 0 110-3 1.5 1.5 0 010 3z"/><path d="M7.25 7h1.5v2h-1.5V7zm1.5-3.25h-2v.75h1.5v.5h-.75v.5h1v.75h.75V7.5h-1.5V3.75z"/></svg>
                     Need Help?
                 </button>
             </div>
@@ -295,64 +431,126 @@
                 {% csrf_token %}
 
                 <div class="form-section">
-                    <h2 class="section-title">Requester Information</h2>
+                    <h3 class="section-title">
+                        <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"/></svg>
+                        Requester Information
+                    </h3>
+                    <p style="font-size: 0.875rem; color: var(--carbon-gray-70); margin-bottom: var(--carbon-spacing-09);">Tell us about yourself - the person who will manage this school's account.</p>
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="requester_name">Full Name *</label>
+                            <div class="form-label-wrapper">
+                                <label for="requester_name">Full Name *</label>
+                                <span class="tooltip-trigger" tabindex="0">?
+                                    <span class="tooltip-content">Your full legal name for account verification</span>
+                                </span>
+                            </div>
                             <input type="text" id="requester_name" name="requester_name" placeholder="Enter your full name" required>
                         </div>
                         <div class="form-group">
-                            <label for="requester_email">Email Address *</label>
+                            <div class="form-label-wrapper">
+                                <label for="requester_email">Email Address *</label>
+                                <span class="tooltip-trigger" tabindex="0">?
+                                    <span class="tooltip-content">Used for account login and important notifications</span>
+                                </span>
+                            </div>
                             <input type="email" id="requester_email" name="requester_email" placeholder="your@email.com" required>
                         </div>
                         <div class="form-group">
-                            <label for="requester_phone">Phone Number *</label>
+                            <div class="form-label-wrapper">
+                                <label for="requester_phone">Phone Number *</label>
+                                <span class="tooltip-trigger" tabindex="0">?
+                                    <span class="tooltip-content">Include country code (+256 for Uganda)</span>
+                                </span>
+                            </div>
                             <input type="tel" id="requester_phone" name="requester_phone" placeholder="+256..." required>
+                            <span class="form-hint">We'll send SMS verification</span>
                         </div>
                     </div>
                 </div>
 
                 <div class="form-section">
-                    <h2 class="section-title">School Information</h2>
+                    <h3 class="section-title">
+                        <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10.75 2.75a.75.75 0 00-1.5 0v8.614L6.295 8.235a.75.75 0 10-1.09 1.03l4.25 4.5a.75.75 0 001.09 0l4.25-4.5a.75.75 0 00-1.09-1.03l-2.955 3.129V2.75z"/><path d="M3.5 12.75a.75.75 0 00-1.5 0v2.5A2.75 2.75 0 004.75 18h10.5A2.75 2.75 0 0018 15.25v-2.5a.75.75 0 00-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5z"/></svg>
+                        School Information
+                    </h3>
+                    <p style="font-size: 0.875rem; color: var(--carbon-gray-70); margin-bottom: var(--carbon-spacing-09);">Provide details about your school for official records.</p>
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="school_name">School Name *</label>
+                            <div class="form-label-wrapper">
+                                <label for="school_name">School Name *</label>
+                                <span class="tooltip-trigger" tabindex="0">?
+                                    <span class="tooltip-content">Official registered name of your school</span>
+                                </span>
+                            </div>
                             <input type="text" id="school_name" name="school_name" placeholder="Enter school name" required>
                         </div>
                         <div class="form-group">
-                            <label for="school_acronym">School Acronym *</label>
+                            <div class="form-label-wrapper">
+                                <label for="school_acronym">School Acronym *</label>
+                                <span class="tooltip-trigger" tabindex="0">?
+                                    <span class="tooltip-content">Short form (e.g., BFA, KJS). Max 10 characters.</span>
+                                </span>
+                            </div>
                             <input type="text" id="school_acronym" name="school_acronym" placeholder="e.g., BFA" maxlength="10" style="text-transform: uppercase;" required>
                         </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="school_phone">School Phone *</label>
+                            <div class="form-label-wrapper">
+                                <label for="school_phone">School Phone *</label>
+                                <span class="tooltip-trigger" tabindex="0">?
+                                    <span class="tooltip-content">Main contact number for the school</span>
+                                </span>
+                            </div>
                             <input type="tel" id="school_phone" name="school_phone" placeholder="+256..." required>
                         </div>
                         <div class="form-group">
-                            <label for="school_email">School Email *</label>
+                            <div class="form-label-wrapper">
+                                <label for="school_email">School Email *</label>
+                                <span class="tooltip-trigger" tabindex="0">?
+                                    <span class="tooltip-content">Official email for school communications</span>
+                                </span>
+                            </div>
                             <input type="email" id="school_email" name="school_email" placeholder="info@school.edu" required>
                         </div>
                         <div class="form-group">
-                            <label for="currency">Currency *</label>
-                            <select id="currency" name="currency" required>
-                                <option value="UGX">UGX - Ugandan Shilling</option>
-                                <option value="USD">USD - US Dollar</option>
-                                <option value="KES">KES - Kenyan Shilling</option>
-                                <option value="TZS">TZS - Tanzanian Shilling</option>
-                            </select>
+                            <div class="form-label-wrapper">
+                                <label for="currency">Currency *</label>
+                                <span class="tooltip-trigger" tabindex="0">?
+                                    <span class="tooltip-content">Currency for fees and financial reports</span>
+                                </span>
+                            </div>
+                            <div class="cds--select">
+                                <select id="currency" name="currency" class="cds--select-input" required>
+                                    <option value="UGX">UGX - Ugandan Shilling</option>
+                                    <option value="USD">USD - US Dollar</option>
+                                    <option value="KES">KES - Kenyan Shilling</option>
+                                    <option value="TZS">TZS - Tanzanian Shilling</option>
+                                </select>
+                                <svg class="cds--select__arrow" viewBox="0 0 16 16" width="16" height="16"><path d="M8 11L3 6h10l-5 5z"/></svg>
+                            </div>
                         </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group full-width">
-                            <label for="school_address">School Address *</label>
+                            <div class="form-label-wrapper">
+                                <label for="school_address">School Address *</label>
+                                <span class="tooltip-trigger" tabindex="0">?
+                                    <span class="tooltip-content">Full physical address including district</span>
+                                </span>
+                            </div>
                             <textarea id="school_address" name="school_address" placeholder="Enter full address" required></textarea>
                         </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group full-width">
-                            <label for="notes">Additional Notes (Optional)</label>
-                            <textarea id="notes" name="notes" placeholder="Number of students, programs offered, etc."></textarea>
+                            <div class="form-label-wrapper">
+                                <label for="notes">Additional Notes (Optional)</label>
+                                <span class="tooltip-trigger" tabindex="0">?
+                                    <span class="tooltip-content">Tell us about your school size, programs, special requirements</span>
+                                </span>
+                            </div>
+                            <textarea id="notes" name="notes" placeholder="Number of students, programs offered, special requirements..."></textarea>
                         </div>
                     </div>
                 </div>
@@ -366,32 +564,41 @@
     </main>
 
     <footer class="page-footer">
-        <p>Friends of Children School Management System &copy; 2025</p>
+        <p>Friends of Children School Management System &copy; 2026</p>
     </footer>
 
     <!-- Help Modal -->
     <div class="modal-overlay" id="helpModal">
-        <div class="modal">
+        <div class="modal" style="max-width: 600px;">
             <div class="modal-header">
-                <h3 class="modal-title">Registration Help</h3>
+                <h3 class="modal-title">School Registration Help</h3>
                 <button class="modal-close" onclick="Modal.close('helpModal')">
                     <svg viewBox="0 0 16 16"><path d="M12 4.7L11.3 4 8 7.3 4.7 4 4 4.7 7.3 8 4 11.3l.7.7L8 8.7l3.3 3.3.7-.7L8.7 8 12 4.7z"/></svg>
                 </button>
             </div>
             <div class="modal-body">
                 <p><strong>How to Register Your School:</strong></p>
-                <p>1. Fill in your personal information (requester details)<br>
-                2. Provide your school details<br>
-                3. Submit the request for review</p>
+                <ol style="padding-left: 1.25rem; color: var(--carbon-gray-70); line-height: 1.8;">
+                    <li><strong>Requester Information</strong> - Fill in your personal details. You will be the primary administrator for this school's account.</li>
+                    <li><strong>School Information</strong> - Provide official details about your school including name, contact info, and address.</li>
+                    <li><strong>Submit Request</strong> - Our team will review your registration within 2-3 business days.</li>
+                </ol>
 
-                <p><strong>After Submission:</strong></p>
-                <p>Our team will review your request. Once approved, you'll receive login credentials to set up your school.</p>
+                <p style="margin-top: 1rem;"><strong>Field Explanations:</strong></p>
+                <ul style="padding-left: 1.25rem; color: var(--carbon-gray-70); line-height: 1.8;">
+                    <li><strong>Acronym</strong> - A short form for your school used throughout the system (e.g., "BFA" for "Best Friends Academy")</li>
+                    <li><strong>Currency</strong> - This sets the default currency for all fee collections and financial reports</li>
+                    <li><strong>Additional Notes</strong> - Tell us about your school size, programs, or special requirements</li>
+                </ul>
 
-                <p><strong>Need Help?</strong></p>
-                <p>Contact support@friendsofchildren.edu</p>
+                <p style="margin-top: 1rem;"><strong>After Approval:</strong></p>
+                <p style="color: var(--carbon-gray-70);">Once approved, you'll receive login credentials via email to complete your school setup and invite staff members.</p>
+
+                <p style="margin-top: 1rem;"><strong>Need assistance?</strong></p>
+                <p style="color: var(--carbon-gray-70);">Contact our support team at <a href="mailto:support@friendsofchildren.edu" style="color: var(--carbon-blue-60);">support@friendsofchildren.edu</a></p>
             </div>
             <div class="modal-footer">
-                <button class="modal-btn modal-btn--primary" onclick="Modal.close('helpModal')">Close</button>
+                <button class="modal-btn modal-btn--primary" onclick="Modal.close('helpModal')">Got it</button>
             </div>
         </div>
     </div>
@@ -413,6 +620,15 @@
             <div class="modal-footer">
                 <button class="modal-btn modal-btn--primary" onclick="window.location.href='/'">Back to Home</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="cds--loading">
+            <svg class="cds--loading__svg" viewBox="0 0 100 100">
+                <circle class="cds--loading__stroke" cx="50" cy="50" r="40"></circle>
+            </svg>
         </div>
     </div>
 

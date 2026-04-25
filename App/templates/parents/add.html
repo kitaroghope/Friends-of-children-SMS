@@ -1,0 +1,199 @@
+{% extends 'base.html' %}
+
+{% block title %}Add Parent - Friends of Children SMS{% endblock %}
+
+{% block body %}
+<style>
+    .form-section { margin-bottom: var(--carbon-spacing-06); }
+    .form-section h3 { margin-bottom: var(--carbon-spacing-04); padding-bottom: var(--carbon-spacing-03); border-bottom: 1px solid var(--carbon-gray-20); }
+    .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--carbon-spacing-04); }
+    .form-actions { display: flex; gap: var(--carbon-spacing-04); margin-top: var(--carbon-spacing-06); padding-top: var(--carbon-spacing-05); border-top: 1px solid var(--carbon-gray-20); }
+    .error-message { background: rgba(218, 30, 40, 0.1); border-left: 3px solid var(--carbon-red-60); color: var(--carbon-red-60); padding: var(--carbon-spacing-04); margin-bottom: var(--carbon-spacing-05); display: none; }
+    .success-message { background: rgba(36, 161, 72, 0.1); border-left: 3px solid var(--carbon-green-60); color: var(--carbon-green-60); padding: var(--carbon-spacing-04); margin-bottom: var(--carbon-spacing-05); display: none; }
+    .checkbox-group { display: flex; gap: var(--carbon-spacing-05); flex-wrap: wrap; }
+    .checkbox-group .cds--checkbox-wrapper { display: flex; align-items: center; gap: var(--carbon-spacing-02); }
+</style>
+
+<div class="main-content">
+    <div class="cds--grid">
+        <!-- Breadcrumb -->
+        <div class="breadcrumb" id="parentBreadcrumb">
+            <a href="/dashboard/">Home</a>
+            <span class="breadcrumb-separator">/</span>
+            <a href="/parents/">Parents</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-current">Add Parent</span>
+        </div>
+
+        <div id="errorMessage" class="error-message"></div>
+        <div id="successMessage" class="success-message"></div>
+
+        <form id="parentForm">
+            {% csrf_token %}
+
+            <!-- Personal Information -->
+            <div class="form-section cds--tile">
+                <h3>Personal Information</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="first_name">First Name *</label>
+                        <input type="text" id="first_name" name="first_name" class="cds--text-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="last_name">Last Name *</label>
+                        <input type="text" id="last_name" name="last_name" class="cds--text-input" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="email">Email</label>
+                        <input type="email" id="email" name="email" class="cds--text-input">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="phone">Phone *</label>
+                        <input type="text" id="phone" name="phone" class="cds--text-input" placeholder="e.g., 2567XXXXXXXX" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="alternate_phone">Alternate Phone</label>
+                        <input type="text" id="alternate_phone" name="alternate_phone" class="cds--text-input" placeholder="e.g., 2567XXXXXXXX">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="relationship">Relationship to Student *</label>
+                        <div class="cds--select">
+                            <select id="relationship" name="relationship" class="cds--select-input" required>
+                                <option value="">Select...</option>
+                                <option value="father">Father</option>
+                                <option value="mother">Mother</option>
+                                <option value="guardian">Guardian</option>
+                                <option value="other">Other</option>
+                            </select>
+                            <svg class="cds--select__arrow" viewBox="0 0 16 16" width="16" height="16"><path d="M8 11L3 6h10l-5 5z"/></svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Address & Occupation -->
+            <div class="form-section cds--tile">
+                <h3>Address & Occupation</h3>
+                <div class="form-row">
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                        <label class="form-label" for="address">Address</label>
+                        <textarea id="address" name="address" class="cds--text-input" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="occupation">Occupation</label>
+                        <input type="text" id="occupation" name="occupation" class="cds--text-input" placeholder="e.g., Engineer, Teacher, Farmer">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact Permissions -->
+            <div class="form-section cds--tile">
+                <h3>Contact Permissions</h3>
+                <div class="checkbox-group">
+                    <div class="cds--checkbox-wrapper">
+                        <input type="checkbox" id="is_emergency_contact" name="is_emergency_contact" class="cds--checkbox" value="true">
+                        <label for="is_emergency_contact">Emergency Contact</label>
+                    </div>
+                    <div class="cds--checkbox-wrapper">
+                        <input type="checkbox" id="can_receive_sms" name="can_receive_sms" class="cds--checkbox" value="true" checked>
+                        <label for="can_receive_sms">Can Receive SMS</label>
+                    </div>
+                    <div class="cds--checkbox-wrapper">
+                        <input type="checkbox" id="can_pickup" name="can_pickup" class="cds--checkbox" value="true">
+                        <label for="can_pickup">Can Pick Up Child</label>
+                    </div>
+                    <div class="cds--checkbox-wrapper">
+                        <input type="checkbox" id="is_financial_responsible" name="is_financial_responsible" class="cds--checkbox" value="true" checked>
+                        <label for="is_financial_responsible">Financial Responsible</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Additional Notes -->
+            <div class="form-section cds--tile">
+                <h3>Additional Notes</h3>
+                <div class="form-row">
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                        <label class="form-label" for="notes">Notes</label>
+                        <textarea id="notes" name="notes" class="cds--text-input" rows="3" placeholder="Any additional information..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="form-actions">
+                <a href="/parents/" class="cds--btn cds--btn--secondary">Cancel</a>
+                <button type="submit" class="cds--btn cds--btn--primary" id="submitBtn">
+                    <span id="submitText">Add Parent</span>
+                    <span id="submitLoading" style="display: none;">
+                        <span class="cds--loading__svg" style="width:16px;height:16px;margin:0"><circle class="cds--loading__stroke" cx="8" cy="8" r="6"/></span> Saving...
+                    </span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        Breadcrumb.render('parentBreadcrumb');
+    });
+
+    document.getElementById('parentForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const formData = new FormData(e.target);
+        const data = Object.fromEntries(formData.entries());
+
+        // Handle checkboxes - include them only if checked
+        data.is_emergency_contact = document.getElementById('is_emergency_contact').checked;
+        data.can_receive_sms = document.getElementById('can_receive_sms').checked;
+        data.can_pickup = document.getElementById('can_pickup').checked;
+        data.is_financial_responsible = document.getElementById('is_financial_responsible').checked;
+
+        // Show loading state
+        document.getElementById('submitText').style.display = 'none';
+        document.getElementById('submitLoading').style.display = 'inline-flex';
+        document.getElementById('submitBtn').disabled = true;
+        document.getElementById('errorMessage').style.display = 'none';
+
+        try {
+            const res = await api.post('/api/parents/parents/', data);
+
+            if (res.ok) {
+                const parent = await res.json();
+                document.getElementById('successMessage').textContent = `Parent "${parent.first_name} ${parent.last_name}" added successfully!`;
+                document.getElementById('successMessage').style.display = 'block';
+
+                // Scroll to top
+                window.scrollTo(0, 0);
+
+                // Reset form
+                e.target.reset();
+
+                // Optionally redirect after delay
+                setTimeout(() => {
+                    window.location.href = '/parents/';
+                }, 1500);
+            } else {
+                const error = await res.json();
+                throw new Error(error.detail || Object.values(error).flat().join(', ') || 'Failed to add parent');
+            }
+        } catch (e) {
+            document.getElementById('errorMessage').textContent = e.message;
+            document.getElementById('errorMessage').style.display = 'block';
+            window.scrollTo(0, 0);
+        } finally {
+            document.getElementById('submitText').style.display = 'inline';
+            document.getElementById('submitLoading').style.display = 'none';
+            document.getElementById('submitBtn').disabled = false;
+        }
+    });
+</script>
+{% endblock %}

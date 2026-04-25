@@ -1,0 +1,421 @@
+{% extends 'base.html' %}
+
+{% block title %}Classes - Friends of Children SMS{% endblock %}
+
+{% block body %}
+<style>
+    .page-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--carbon-spacing-05); }
+    .page-title h1 { margin: 0; }
+    .filters-bar { display: flex; gap: var(--carbon-spacing-04); flex-wrap: wrap; margin-bottom: var(--carbon-spacing-05); }
+    .filters-bar .cds--select { min-width: 150px; }
+    .filters-bar .cds--text-input { min-width: 200px; }
+    .action-cell { display: flex; gap: var(--carbon-spacing-03); }
+    .empty-state { text-align: center; padding: 4rem 2rem; color: var(--carbon-gray-70); }
+    .empty-state svg { width: 64px; height: 64px; margin-bottom: var(--carbon-spacing-04); }
+    .class-card { background: var(--carbon-white); border: 1px solid var(--carbon-gray-20); border-radius: 4px; padding: var(--carbon-spacing-04); transition: all 240ms; }
+    .class-card:hover { border-color: var(--carbon-blue-60); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+    .class-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: var(--carbon-spacing-03); }
+    .class-name { font-size: 1.125rem; font-weight: 600; margin: 0; }
+    .class-section { font-size: 0.875rem; color: var(--carbon-gray-70); }
+    .class-stats { display: flex; gap: var(--carbon-spacing-04); margin-top: var(--carbon-spacing-03); padding-top: var(--carbon-spacing-03); border-top: 1px solid var(--carbon-gray-20); }
+    .class-stat { text-align: center; }
+    .class-stat-value { font-size: 1.25rem; font-weight: 600; }
+    .class-stat-label { font-size: 0.75rem; color: var(--carbon-gray-70); }
+    .grid-view { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--carbon-spacing-04); }
+    .list-view { display: none; }
+    .list-view.active { display: table; }
+    .grid-view.active { display: grid; }
+    .view-toggle { display: flex; gap: var(--carbon-spacing-02); }
+    .view-toggle button { padding: var(--carbon-spacing-02) var(--carbon-spacing-03); }
+    .view-toggle button.active { background: var(--carbon-blue-60); color: white; }
+</style>
+
+<div class="main-content">
+    <div class="cds--grid">
+        <!-- Breadcrumb -->
+        <div class="breadcrumb" id="classesBreadcrumb">
+            <a href="/dashboard/">Home</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-current">Classes</span>
+        </div>
+
+        <!-- Page Title & Actions -->
+        <div class="page-title">
+            <h1>All Classes</h1>
+            <div style="display: flex; gap: var(--carbon-spacing-04); align-items: center;">
+                <div class="view-toggle">
+                    <button class="cds--btn cds--btn--ghost cds--btn--sm active" onclick="setView('grid')" id="gridViewBtn">Grid</button>
+                    <button class="cds--btn cds--btn--ghost cds--btn--sm" onclick="setView('list')" id="listViewBtn">List</button>
+                </div>
+                <button class="cds--btn cds--btn--primary" onclick="Modal.open('classModal')">Add Class</button>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filters-bar">
+            <div class="cds--form-item">
+                <div class="cds--select" style="min-width: 150px;">
+                    <select id="sectionFilter" class="cds--select-input" onchange="loadClasses()">
+                        <option value="">All Sections</option>
+                    </select>
+                    <svg class="cds--select__arrow" viewBox="0 0 16 16" width="16" height="16"><path d="M8 11L3 6h10l-5 5z"/></svg>
+                </div>
+            </div>
+            <div class="cds--form-item">
+                <input type="text" id="searchInput" class="cds--text-input" placeholder="Search by class name..." onkeyup="debounceSearch(event)">
+            </div>
+            <button class="cds--btn cds--btn--secondary" onclick="loadClasses()">Search</button>
+        </div>
+
+        <!-- Results Info -->
+        <div id="resultsInfo" style="margin-bottom: var(--carbon-spacing-04); color: var(--carbon-gray-70); font-size: 0.875rem;"></div>
+
+        <!-- Classes Grid View -->
+        <div id="gridView" class="grid-view active">
+            <!-- Dynamic content -->
+        </div>
+
+        <!-- Classes List View -->
+        <div id="listView" class="cds--tile list-view">
+            <table class="cds--data-table" id="classTable">
+                <thead>
+                    <tr>
+                        <th>Class Name</th>
+                        <th>Section</th>
+                        <th>Capacity</th>
+                        <th>Students</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="classTableBody">
+                    <!-- Dynamic content -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="empty-state" style="display: none;">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72L12 15l5-2.73v3.72z"/></svg>
+            <h3>No Classes Found</h3>
+            <p>No classes match your search criteria. Add a class to get started.</p>
+            <button class="cds--btn cds--btn--primary" style="margin-top: var(--carbon-spacing-04);" onclick="openAddClassModal()">Add Class</button>
+        </div>
+
+        <!-- Loading -->
+        <div id="loadingState" class="empty-state">
+            <div class="cds--loading">
+                <svg class="cds--loading__svg" viewBox="0 0 100 100">
+                    <circle class="cds--loading__stroke" cx="50" cy="50" r="40"></circle>
+                </svg>
+            </div>
+            <p style="margin-top: var(--carbon-spacing-04);">Loading classes...</p>
+        </div>
+
+        <!-- Pagination -->
+        <div id="pagination" style="display: none; margin-top: var(--carbon-spacing-05); display: flex; justify-content: space-between; align-items: center;">
+            <div id="paginationInfo" style="color: var(--carbon-gray-70); font-size: 0.875rem;"></div>
+            <div class="cds--pagination">
+                <button class="cds--pagination__button" id="prevBtn" onclick="changePage(-1)">
+                    <svg class="cds--pagination__button-icon" viewBox="0 0 16 16"><path d="M10 13L6 8l4-5"/></svg>
+                </button>
+                <span id="pageInfo" style="margin: 0 var(--carbon-spacing-04);">Page 1</span>
+                <button class="cds--pagination__button" id="nextBtn" onclick="changePage(1)">
+                    <svg class="cds--pagination__button-icon" viewBox="0 0 16 16"><path d="M6 3l4 5-4 5"/></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Class Modal -->
+<div id="classModal" class="modal-overlay">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 id="modalTitle">Add New Class</h2>
+            <button class="modal-close" onclick="closeClassModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="classForm">
+                <input type="hidden" id="classId" name="id">
+                <div class="modal-form-row">
+                    <div class="modal-form-group">
+                        <label for="className">Class Name *</label>
+                        <input type="text" id="className" name="name" class="cds--text-input" placeholder="e.g., Senior 1, Primary 4" required>
+                    </div>
+                    <div class="modal-form-group">
+                        <label for="classDisplayName">Display Name</label>
+                        <input type="text" id="classDisplayName" name="display_name" class="cds--text-input" placeholder="e.g., S.1">
+                    </div>
+                </div>
+                <div class="modal-form-row">
+                    <div class="modal-form-group">
+                        <label for="classSection">Section *</label>
+                        <div class="cds--select">
+                            <select id="classSection" name="section" class="cds--select-input" required>
+                                <option value="">Select Section...</option>
+                            </select>
+                            <svg class="cds--select__arrow" viewBox="0 0 16 16" width="16" height="16"><path d="M8 11L3 6h10l-5 5z"/></svg>
+                        </div>
+                    </div>
+                    <div class="modal-form-group">
+                        <label for="classCapacity">Capacity</label>
+                        <input type="number" id="classCapacity" name="capacity" class="cds--text-input" placeholder="e.g., 40" min="1">
+                    </div>
+                </div>
+                <div class="modal-form-row">
+                    <div class="modal-form-group">
+                        <label for="classOrder">Order</label>
+                        <input type="number" id="classOrder" name="order" class="cds--text-input" placeholder="1" min="1">
+                    </div>
+                    <div class="modal-form-group" style="display: flex; align-items: center; margin-top: var(--carbon-spacing-06);">
+                        <input type="checkbox" id="classActive" name="is_active" class="cds--checkbox" value="true" checked>
+                        <label for="classActive" style="margin-bottom: 0; margin-left: var(--carbon-spacing-02);">Active</label>
+                    </div>
+                </div>
+                <div class="modal-form-actions">
+                    <button type="button" class="cds--btn cds--btn--secondary" onclick="closeClassModal()">Cancel</button>
+                    <button type="submit" class="cds--btn cds--btn--primary" id="classSubmitBtn">Save Class</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentPage = 1;
+    let pageSize = 20;
+    let searchTimeout = null;
+    let currentView = 'grid';
+
+    async function loadSections() {
+        try {
+            const res = await api.get('/api/academic/sections/');
+            if (res.ok) {
+                const data = await res.json();
+                const select = document.getElementById('sectionFilter');
+                const modalSelect = document.getElementById('classSection');
+                data.results.forEach(section => {
+                    const option1 = document.createElement('option');
+                    option1.value = section.id;
+                    option1.textContent = section.name;
+                    select.appendChild(option1);
+
+                    const option2 = document.createElement('option');
+                    option2.value = section.id;
+                    option2.textContent = section.name;
+                    modalSelect.appendChild(option2);
+                });
+            }
+        } catch (e) {
+            console.log('Could not load sections');
+        }
+    }
+
+    async function loadClasses() {
+        const search = document.getElementById('searchInput').value;
+        const sectionFilter = document.getElementById('sectionFilter').value;
+
+        document.getElementById('loadingState').style.display = 'block';
+        document.getElementById('gridView').style.display = 'none';
+        document.getElementById('listView').classList.remove('active');
+        document.getElementById('emptyState').style.display = 'none';
+
+        let url = `/api/academic/classes/?page=${currentPage}&page_size=${pageSize}`;
+        if (search) url += `&search=${encodeURIComponent(search)}`;
+        if (sectionFilter) url += `&section=${sectionFilter}`;
+
+        try {
+            const res = await api.get(url);
+            if (res.ok) {
+                const data = await res.json();
+                displayClasses(data);
+            } else {
+                showEmptyState();
+            }
+        } catch (e) {
+            console.log('Error loading classes:', e);
+            showEmptyState();
+        }
+    }
+
+    function displayClasses(data) {
+        const gridView = document.getElementById('gridView');
+        const tbody = document.getElementById('classTableBody');
+        gridView.innerHTML = '';
+        tbody.innerHTML = '';
+
+        if (data.results && data.results.length > 0) {
+            data.results.forEach(cls => {
+                // Grid view card
+                const card = document.createElement('div');
+                card.className = 'class-card';
+                card.innerHTML = `
+                    <div class="class-header">
+                        <div>
+                            <h3 class="class-name">${cls.display_name || cls.name}</h3>
+                            <span class="class-section">${cls.section_name || 'No section'}</span>
+                        </div>
+                        <span class="status-badge ${cls.is_active ? 'status-active' : 'status-inactive'}">${cls.is_active ? 'Active' : 'Inactive'}</span>
+                    </div>
+                    <div class="class-stats">
+                        <div class="class-stat">
+                            <div class="class-stat-value">${cls.students_count || 0}</div>
+                            <div class="class-stat-label">Students</div>
+                        </div>
+                        <div class="class-stat">
+                            <div class="class-stat-value">${cls.capacity || '-'}</div>
+                            <div class="class-stat-label">Capacity</div>
+                        </div>
+                    </div>
+                    <div style="margin-top: var(--carbon-spacing-04); display: flex; gap: var(--carbon-spacing-03);">
+                        <button class="cds--btn cds--btn--ghost cds--btn--sm" onclick="editClass(${cls.id})">Edit</button>
+                        <button class="cds--btn cds--btn--ghost cds--btn--sm" onclick="viewClass(${cls.id})">View</button>
+                    </div>
+                `;
+                gridView.appendChild(card);
+
+                // List view row
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${cls.display_name || cls.name}</strong></td>
+                    <td>${cls.section_name || 'N/A'}</td>
+                    <td>${cls.capacity || '-'}</td>
+                    <td>${cls.students_count || 0}</td>
+                    <td>
+                        <div class="action-cell">
+                            <button class="cds--btn cds--btn--ghost cds--btn--sm" onclick="editClass(${cls.id})">Edit</button>
+                            <button class="cds--btn cds--btn--ghost cds--btn--sm" onclick="viewClass(${cls.id})">View</button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('gridView').style.display = 'grid';
+            document.getElementById('pagination').style.display = 'flex';
+
+            // Update pagination
+            const totalPages = Math.ceil(data.count / pageSize);
+            document.getElementById('pageInfo').textContent = `Page ${currentPage} of ${totalPages || 1}`;
+            document.getElementById('resultsInfo').textContent = `Showing ${data.results.length} of ${data.count} classes`;
+            document.getElementById('prevBtn').disabled = currentPage === 1;
+            document.getElementById('nextBtn').disabled = currentPage >= totalPages;
+        } else {
+            showEmptyState();
+        }
+    }
+
+    function showEmptyState() {
+        document.getElementById('loadingState').style.display = 'none';
+        document.getElementById('gridView').style.display = 'none';
+        document.getElementById('listView').classList.remove('active');
+        document.getElementById('emptyState').style.display = 'block';
+        document.getElementById('pagination').style.display = 'none';
+        document.getElementById('resultsInfo').textContent = 'No classes found';
+    }
+
+    function changePage(delta) {
+        currentPage += delta;
+        loadClasses();
+    }
+
+    function debounceSearch(event) {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            currentPage = 1;
+            loadClasses();
+        }, 300);
+    }
+
+    function setView(view) {
+        currentView = view;
+        document.getElementById('gridView').style.display = view === 'grid' ? 'grid' : 'none';
+        document.getElementById('listView').classList.toggle('active', view === 'list');
+        document.getElementById('gridViewBtn').classList.toggle('active', view === 'grid');
+        document.getElementById('listViewBtn').classList.toggle('active', view === 'list');
+    }
+
+    function openAddClassModal() {
+        document.getElementById('modalTitle').textContent = 'Add New Class';
+        document.getElementById('classForm').reset();
+        document.getElementById('classId').value = '';
+        document.getElementById('classActive').checked = true;
+        document.getElementById('classModal').classList.add('active');
+    }
+
+    async function editClass(id) {
+        try {
+            const res = await api.get(`/api/academic/classes/${id}/`);
+            if (res.ok) {
+                const cls = await res.json();
+                document.getElementById('modalTitle').textContent = 'Edit Class';
+                document.getElementById('classId').value = cls.id;
+                document.getElementById('className').value = cls.name || '';
+                document.getElementById('classDisplayName').value = cls.display_name || '';
+                document.getElementById('classSection').value = cls.section || '';
+                document.getElementById('classCapacity').value = cls.capacity || '';
+                document.getElementById('classOrder').value = cls.order || '';
+                document.getElementById('classActive').checked = cls.is_active;
+                document.getElementById('classModal').classList.add('active');
+            }
+        } catch (e) {
+            alert('Error loading class: ' + e.message);
+        }
+    }
+
+    function closeClassModal() {
+        document.getElementById('classModal').classList.remove('active');
+    }
+
+    function viewClass(id) {
+        window.location.href = `/academic/classes/${id}/`;
+    }
+
+    document.getElementById('classForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const formData = new FormData(e.target);
+        const data = Object.fromEntries(formData.entries());
+        data.is_active = document.getElementById('classActive').checked;
+
+        const classId = document.getElementById('classId').value;
+        const url = classId ? `/api/academic/classes/${classId}/` : '/api/academic/classes/';
+        const method = classId ? 'PATCH' : 'POST';
+
+        const submitBtn = document.getElementById('classSubmitBtn');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="cds--loading__svg" style="width:16px;height:16px;margin:0"><circle class="cds--loading__stroke" cx="8" cy="8" r="6"/></span> Saving...';
+
+        try {
+            const res = await api.request(url, { method, body: JSON.stringify(data) });
+
+            if (res.ok) {
+                closeClassModal();
+                loadClasses();
+                showToast(classId ? 'Class updated successfully!' : 'Class created successfully!', 'success');
+            } else {
+                const error = await res.json();
+                throw new Error(error.detail || Object.values(error).flat().join(', ') || 'Failed to save class');
+            }
+        } catch (e) {
+            alert('Error: ' + e.message);
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = 'Save Class';
+        }
+    });
+
+    // Close modal on overlay click
+    document.getElementById('classModal').addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) closeClassModal();
+    });
+
+    // Add students_count to ClassSerializer
+    document.addEventListener('DOMContentLoaded', () => {
+        Breadcrumb.render('classesBreadcrumb');
+        loadSections();
+        loadClasses();
+    });
+</script>
+{% endblock %}

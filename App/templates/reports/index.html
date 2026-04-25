@@ -1,0 +1,699 @@
+{% extends 'base.html' %}
+
+{% block title %}Reports - Friends of Children SMS{% endblock %}
+
+{% block body %}
+<style>
+    .page-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--carbon-spacing-05); }
+    .page-title h1 { margin: 0; }
+    .filters-bar { display: flex; gap: var(--carbon-spacing-04); flex-wrap: wrap; margin-bottom: var(--carbon-spacing-05); align-items: flex-end; }
+    .filters-bar .cds--select { min-width: 150px; }
+    .filters-bar .cds--text-input { min-width: 200px; }
+    .report-section { margin-bottom: var(--carbon-spacing-06); }
+    .section-title { font-size: 1.125rem; font-weight: 600; margin-bottom: var(--carbon-spacing-04); display: flex; align-items: center; gap: var(--carbon-spacing-03); }
+    .section-title svg { width: 20px; height: 20px; color: var(--carbon-blue-60); }
+    .report-card { background: white; border-radius: 4px; padding: var(--carbon-spacing-05); transition: transform 0.2s ease, box-shadow 0.2s ease; cursor: pointer; border: 1px solid var(--carbon-gray-20); height: 100%; }
+    .report-card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+    .report-card-icon { width: 48px; height: 48px; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: var(--carbon-spacing-03); }
+    .report-card-icon.students { background: rgba(26, 99, 155, 0.1); color: #1a639b; }
+    .report-card-icon.staff { background: rgba(36, 161, 72, 0.1); color: var(--carbon-green-60); }
+    .report-card-icon.finance { background: rgba(240, 183, 55, 0.1); color: var(--carbon-orange-60); }
+    .report-card-icon.exams { background: rgba(156, 39, 176, 0.1); color: #9c27b0; }
+    .report-card-icon.attendance { background: rgba(233, 30, 99, 0.1); color: #e91e63; }
+    .report-card-icon.custom { background: var(--carbon-gray-10); color: var(--carbon-gray-70); }
+    .report-card h3 { font-size: 1rem; font-weight: 600; margin: 0 0 var(--carbon-spacing-02); }
+    .report-card p { font-size: 0.875rem; color: var(--carbon-gray-70); margin: 0; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--carbon-spacing-04); margin-bottom: var(--carbon-spacing-05); }
+    .stat-card { background: white; padding: var(--carbon-spacing-04); border-radius: 4px; text-align: center; border: 1px solid var(--carbon-gray-20); }
+    .stat-value { font-size: 2rem; font-weight: 600; color: var(--carbon-blue-60); }
+    .stat-label { font-size: 0.75rem; color: var(--carbon-gray-70); text-transform: uppercase; letter-spacing: 0.5px; margin-top: var(--carbon-spacing-02); }
+    .stat-change { font-size: 0.75rem; margin-top: var(--carbon-spacing-02); }
+    .stat-change.positive { color: var(--carbon-green-60); }
+    .stat-change.negative { color: var(--carbon-red-60); }
+    .quick-chart { background: white; padding: var(--carbon-spacing-05); border-radius: 4px; margin-bottom: var(--carbon-spacing-05); border: 1px solid var(--carbon-gray-20); }
+    .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--carbon-spacing-04); }
+    .chart-title { font-weight: 600; }
+    .chart-placeholder { height: 200px; display: flex; align-items: center; justify-content: center; background: var(--carbon-gray-10); border-radius: 4px; color: var(--carbon-gray-70); }
+    .bar-chart { display: flex; align-items: flex-end; gap: var(--carbon-spacing-03); height: 180px; padding: var(--carbon-spacing-04) 0; }
+    .bar-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: var(--carbon-spacing-02); }
+    .bar-fill { width: 100%; max-width: 40px; background: var(--carbon-blue-60); border-radius: 4px 4px 0 0; min-height: 4px; transition: height 0.3s ease; }
+    .bar-label { font-size: 0.75rem; color: var(--carbon-gray-70); }
+    .pie-chart { display: flex; gap: var(--carbon-spacing-05); align-items: center; }
+    .pie-visual { width: 120px; height: 120px; border-radius: 50%; background: conic-gradient(var(--carbon-blue-60) 0deg 120deg, var(--carbon-green-60) 120deg 200deg, var(--carbon-orange-60) 200deg 280deg, var(--carbon-gray-30) 280deg 360deg); }
+    .pie-legend { flex: 1; }
+    .legend-item { display: flex; align-items: center; gap: var(--carbon-spacing-02); margin-bottom: var(--carbon-spacing-02); font-size: 0.875rem; }
+    .legend-color { width: 12px; height: 12px; border-radius: 2px; }
+    .tab-container { margin-bottom: var(--carbon-spacing-05); }
+    .tab-list { display: flex; gap: var(--carbon-spacing-02); border-bottom: 1px solid var(--carbon-gray-20); margin-bottom: var(--carbon-spacing-04); }
+    .tab-btn { padding: var(--carbon-spacing-03) var(--carbon-spacing-04); background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; font-weight: 500; color: var(--carbon-gray-70); }
+    .tab-btn:hover { color: var(--carbon-gray-100); }
+    .tab-btn.active { color: var(--carbon-blue-60); border-bottom-color: var(--carbon-blue-60); }
+    .recent-activity { background: white; border-radius: 4px; padding: var(--carbon-spacing-05); border: 1px solid var(--carbon-gray-20); }
+    .activity-item { display: flex; gap: var(--carbon-spacing-03); padding: var(--carbon-spacing-03) 0; border-bottom: 1px solid var(--carbon-gray-10); }
+    .activity-item:last-child { border-bottom: none; }
+    .activity-icon { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .activity-icon.payment { background: rgba(36, 161, 72, 0.1); color: var(--carbon-green-60); }
+    .activity-icon.enrollment { background: rgba(26, 99, 155, 0.1); color: #1a639b; }
+    .activity-icon.exam { background: rgba(156, 39, 176, 0.1); color: #9c27b0; }
+    .activity-content { flex: 1; }
+    .activity-title { font-weight: 500; font-size: 0.875rem; }
+    .activity-time { font-size: 0.75rem; color: var(--carbon-gray-70); }
+    .export-dropdown { position: relative; }
+    .export-menu { position: absolute; top: 100%; right: 0; background: white; border-radius: 4px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); min-width: 150px; z-index: 100; display: none; }
+    .export-menu.show { display: block; }
+    .export-menu button { display: block; width: 100%; padding: var(--carbon-spacing-03) var(--carbon-spacing-04); text-align: left; background: none; border: none; cursor: pointer; font-size: 0.875rem; }
+    .export-menu button:hover { background: var(--carbon-gray-10); }
+</style>
+
+<header class="page-header">
+    <div class="cds--grid">
+        <h1>Reports & Analytics</h1>
+        <div class="export-dropdown">
+            <button class="cds--btn cds--btn--secondary" onclick="toggleExportMenu()">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style="margin-right: 4px;"><path d="M8 1l7 7H1l7-7zM8 4l-4 4h8l-4-4z"/></svg>
+                Export
+            </button>
+            <div id="exportMenu" class="export-menu">
+                <button onclick="exportReport('pdf')">Export as PDF</button>
+                <button onclick="exportReport('excel')">Export as Excel</button>
+                <button onclick="exportReport('csv')">Export as CSV</button>
+            </div>
+        </div>
+    </div>
+</header>
+
+<div class="main-content">
+    <div class="cds--grid">
+        <!-- Filters -->
+        <div class="cds--tile" style="margin-bottom: var(--carbon-spacing-05);">
+            <div class="filters-bar" style="margin-bottom: 0;">
+                <div class="cds--form-item">
+                    <label class="cds--label">Academic Year</label>
+                    <select id="yearFilter" class="cds--select">
+                        <option value="">Current Year</option>
+                    </select>
+                </div>
+                <div class="cds--form-item">
+                    <label class="cds--label">Term</label>
+                    <select id="termFilter" class="cds--select">
+                        <option value="">All Terms</option>
+                    </select>
+                </div>
+                <div class="cds--form-item">
+                    <label class="cds--label">Class</label>
+                    <select id="classFilter" class="cds--select">
+                        <option value="">All Classes</option>
+                    </select>
+                </div>
+                <div class="cds--form-item">
+                    <button class="cds--btn cds--btn--primary" onclick="generateReport()">Generate Report</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tab-container">
+            <div class="tab-list">
+                <button class="tab-btn active" onclick="switchTab('overview')">Overview</button>
+                <button class="tab-btn" onclick="switchTab('students')">Students</button>
+                <button class="tab-btn" onclick="switchTab('staff')">Staff</button>
+                <button class="tab-btn" onclick="switchTab('finance')">Finance</button>
+                <button class="tab-btn" onclick="switchTab('exams')">Exams</button>
+            </div>
+        </div>
+
+        <!-- Overview Tab -->
+        <div id="overviewTab" class="report-tab">
+            <!-- Stats Grid -->
+            <div class="stats-grid" style="margin-bottom: var(--carbon-spacing-05);">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalStudents">-</div>
+                    <div class="stat-label">Total Students</div>
+                    <div class="stat-change positive">+12% from last year</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalStaff">-</div>
+                    <div class="stat-label">Total Staff</div>
+                    <div class="stat-change positive">+5% from last year</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalRevenue">-</div>
+                    <div class="stat-label">Revenue</div>
+                    <div class="stat-change positive">+8% from last term</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="avgAttendance">-</div>
+                    <div class="stat-label">Avg Attendance</div>
+                    <div class="stat-change positive">+2% from last week</div>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div class="cds--row" style="margin-bottom: var(--carbon-spacing-05);">
+                <div class="cds--col-md-6">
+                    <div class="quick-chart">
+                        <div class="chart-header">
+                            <span class="chart-title">Enrollment by Class</span>
+                        </div>
+                        <div class="bar-chart" id="enrollmentChart">
+                            <div class="bar-item"><div class="bar-fill" style="height: 60%;"></div><span class="bar-label">P.1</span></div>
+                            <div class="bar-item"><div class="bar-fill" style="height: 80%;"></div><span class="bar-label">P.2</span></div>
+                            <div class="bar-item"><div class="bar-fill" style="height: 70%;"></div><span class="bar-label">P.3</span></div>
+                            <div class="bar-item"><div class="bar-fill" style="height: 55%;"></div><span class="bar-label">P.4</span></div>
+                            <div class="bar-item"><div class="bar-fill" style="height: 45%;"></div><span class="bar-label">P.5</span></div>
+                            <div class="bar-item"><div class="bar-fill" style="height: 40%;"></div><span class="bar-label">P.6</span></div>
+                            <div class="bar-item"><div class="bar-fill" style="height: 35%;"></div><span class="bar-label">P.7</span></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="cds--col-md-6">
+                    <div class="quick-chart">
+                        <div class="chart-header">
+                            <span class="chart-title">Fee Collection Status</span>
+                        </div>
+                        <div class="pie-chart">
+                            <div class="pie-visual"></div>
+                            <div class="pie-legend">
+                                <div class="legend-item"><div class="legend-color" style="background: var(--carbon-blue-60);"></div> Collected (65%)</div>
+                                <div class="legend-item"><div class="legend-color" style="background: var(--carbon-green-60);"></div> Pending (22%)</div>
+                                <div class="legend-item"><div class="legend-color" style="background: var(--carbon-orange-60);"></div> Overdue (10%)</div>
+                                <div class="legend-item"><div class="legend-color" style="background: var(--carbon-gray-30);"></div> Waived (3%)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="recent-activity">
+                <h3 style="margin-bottom: var(--carbon-spacing-04);">Recent Activity</h3>
+                <div id="activityList">
+                    <div class="activity-item">
+                        <div class="activity-icon payment">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm.75 10.5a.75.75 0 01-1.5 0v-3a.75.75 0 011.5 0v3z"/></svg>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-title">Payment received - UGX 500,000</div>
+                            <div class="activity-time">From Parent of Nakato Sarah (P.3) - 2 hours ago</div>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-icon enrollment">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2a4 4 0 00-4 4v1H3a1 1 0 00-1 1v7a1 1 0 001 1h10a1 1 0 001-1V8a1 1 0 00-1-1h-1V6a4 4 0 00-4-4zm2 8.5V9h-4v3.5L8 13l2-1.5z"/></svg>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-title">New enrollment - Mugisha John</div>
+                            <div class="activity-time">Enrolled in P.5 - 5 hours ago</div>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-icon exam">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M13.5 1.5l-10 7L2 10l1.5 1.5L9 14V1.5z"/></svg>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-title">Exam results published - End of Term II</div>
+                            <div class="activity-time">Results available for all classes - 1 day ago</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Students Tab -->
+        <div id="studentsTab" class="report-tab" style="display: none;">
+            <div class="report-section">
+                <h3 class="section-title">
+                    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 8a3 3 0 100-6 3 3 0 000 6zm0 2c-4 0-8 2-8 4v1h16v-1c0-2-4-4-8-4z"/></svg>
+                    Student Reports
+                </h3>
+                <div class="cds--row">
+                    <div class="cds--col-md-3">
+                        <div class="report-card" onclick="navigateTo('reports/enrollment')">
+                            <div class="report-card-icon students">
+                                <svg width="24" height="24" viewBox="0 0 16 16" fill="currentColor"><path d="M8 8a3 3 0 100-6 3 3 0 000 6zm0 2c-4 0-8 2-8 4v1h16v-1c0-2-4-4-8-4z"/></svg>
+                            </div>
+                            <h3>Enrollment Report</h3>
+                            <p>Student enrollment statistics and trends</p>
+                        </div>
+                    </div>
+                    <div class="cds--col-md-3">
+                        <div class="report-card" onclick="navigateTo('reports/attendance')">
+                            <div class="report-card-icon attendance">
+                                <svg width="24" height="24" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0a8 8 0 100 16A8 8 0 008 0zm0 14.5a6.5 6.5 0 110-13 6.5 6.5 0 010 13z"/><path d="M8 4a.5.5 0 01.5.5v3h3a.5.5 0 010 1h-3.5a.5.5 0 01-.5-.5v-3a.5.5 0 01.5-.5z"/></svg>
+                            </div>
+                            <h3>Attendance Report</h3>
+                            <p>Student attendance patterns and statistics</p>
+                        </div>
+                    </div>
+                    <div class="cds--col-md-3">
+                        <div class="report-card" onclick="navigateTo('exams/reports/')">
+                            <div class="report-card-icon exams">
+                                <svg width="24" height="24" viewBox="0 0 16 16" fill="currentColor"><path d="M13.5 1.5l-10 7L2 10l1.5 1.5L9 14V1.5z"/></svg>
+                            </div>
+                            <h3>Performance Report</h3>
+                            <p>Academic performance and grade analysis</p>
+                        </div>
+                    </div>
+                    <div class="cds--col-md-3">
+                        <div class="report-card" onclick="navigateTo('students/')">
+                            <div class="report-card-icon students">
+                                <svg width="24" height="24" viewBox="0 0 16 16" fill="currentColor"><path d="M2 3h12v2H2V3zm0 4h12v2H2V7zm0 4h8v2H2v-2z"/></svg>
+                            </div>
+                            <h3>Student Directory</h3>
+                            <p>Complete student information list</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Student Stats -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="activeStudents">-</div>
+                    <div class="stat-label">Active Students</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="newEnrollments">-</div>
+                    <div class="stat-label">New This Term</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="avgClassSize">-</div>
+                    <div class="stat-label">Avg Class Size</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="retentionRate">-</div>
+                    <div class="stat-label">Retention Rate</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Staff Tab -->
+        <div id="staffTab" class="report-tab" style="display: none;">
+            <div class="report-section">
+                <h3 class="section-title">
+                    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 8a3 3 0 100-6 3 3 0 000 6zm0 2c-4 0-8 2-8 4v1h16v-1c0-2-4-4-8-4z"/></svg>
+                    Staff Reports
+                </h3>
+                <div class="cds--row">
+                    <div class="cds--col-md-3">
+                        <div class="report-card" onclick="navigateTo('staff/')">
+                            <div class="report-card-icon staff">
+                                <svg width="24" height="24" viewBox="0 0 16 16" fill="currentColor"><path d="M8 8a3 3 0 100-6 3 3 0 000 6zm0 2c-4 0-8 2-8 4v1h16v-1c0-2-4-4-8-4z"/></svg>
+                            </div>
+                            <h3>Staff Directory</h3>
+                            <p>Complete staff listing with contacts</p>
+                        </div>
+                    </div>
+                    <div class="cds--col-md-3">
+                        <div class="report-card" onclick="navigateTo('reports/staff_attendance')">
+                            <div class="report-card-icon attendance">
+                                <svg width="24" height="24" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0a8 8 0 100 16A8 8 0 008 0zm0 14.5a6.5 6.5 0 110-13 6.5 6.5 0 010 13z"/></svg>
+                            </div>
+                            <h3>Staff Attendance</h3>
+                            <p>Staff attendance and punctuality</p>
+                        </div>
+                    </div>
+                    <div class="cds--col-md-3">
+                        <div class="report-card" onclick="navigateTo('reports/departments')">
+                            <div class="report-card-icon staff">
+                                <svg width="24" height="24" viewBox="0 0 16 16" fill="currentColor"><path d="M2 3h12v2H2V3zm0 4h12v2H2V7zm0 4h8v2H2v-2z"/></svg>
+                            </div>
+                            <h3>Department Report</h3>
+                            <p>Staff distribution by department</p>
+                        </div>
+                    </div>
+                    <div class="cds--col-md-3">
+                        <div class="report-card" onclick="navigateTo('reports/qualifications')">
+                            <div class="report-card-icon staff">
+                                <svg width="24" height="24" viewBox="0 0 16 16" fill="currentColor"><path d="M13.5 1.5l-10 7L2 10l1.5 1.5L9 14V1.5z"/></svg>
+                            </div>
+                            <h3>Qualifications</h3>
+                            <p>Staff qualifications and training</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Staff Stats -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalTeachers">-</div>
+                    <div class="stat-label">Teachers</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalAdmin">-</div>
+                    <div class="stat-label">Admin Staff</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="pupilTeacherRatio">-</div>
+                    <div class="stat-label">Pupil-Teacher Ratio</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="staffTurnover">-</div>
+                    <div class="stat-label">Staff Turnover</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Finance Tab -->
+        <div id="financeTab" class="report-tab" style="display: none;">
+            <div class="report-section">
+                <h3 class="section-title">
+                    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zM7 5h2v3H7V5zm0 4h2v3H7V9z"/></svg>
+                    Financial Reports
+                </h3>
+                <div class="cds--row">
+                    <div class="cds--col-md-3">
+                        <div class="report-card" onclick="navigateTo('finance/fees/')">
+                            <div class="report-card-icon finance">
+                                <svg width="24" height="24" viewBox="0 0 16 16" fill="currentColor"><path d="M14 2H2a1 1 0 00-1 1v12a1 1 0 001 1h12a1 1 0 001-1V3a1 1 0 00-1-1zm0 2v4h-12V4h12zm-12 6v4h12v-4H2zm0 6v2h12v-2H2z"/></svg>
+                            </div>
+                            <h3>Fee Structure</h3>
+                            <p>Fee schedules and structures</p>
+                        </div>
+                    </div>
+                    <div class="cds--col-md-3">
+                        <div class="report-card" onclick="navigateTo('finance/invoices/')">
+                            <div class="report-card-icon finance">
+                                <svg width="24" height="24" viewBox="0 0 16 16" fill="currentColor"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 2l5 5h-5V4zM6 20V4h6v6h6v10H6z"/></svg>
+                            </div>
+                            <h3>Invoice Report</h3>
+                            <p>Invoices and billing summary</p>
+                        </div>
+                    </div>
+                    <div class="cds--col-md-3">
+                        <div class="report-card" onclick="navigateTo('finance/payments/')">
+                            <div class="report-card-icon payment">
+                                <svg width="24" height="24" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm.75 10.5a.75.75 0 01-1.5 0v-3a.75.75 0 011.5 0v3z"/></svg>
+                            </div>
+                            <h3>Payment Report</h3>
+                            <p>Payment collections and history</p>
+                        </div>
+                    </div>
+                    <div class="cds--col-md-3">
+                        <div class="report-card" onclick="navigateTo('reports/arrears')">
+                            <div class="report-card-icon finance">
+                                <svg width="24" height="24" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 00-7 7h2a5 5 0 0110 0h2A7 7 0 008 1zm0 10a3 3 0 110-6 3 3 0 010 6z"/></svg>
+                            </div>
+                            <h3>Arrears Report</h3>
+                            <p>Outstanding balances and arrears</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Finance Stats -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalArrears">-</div>
+                    <div class="stat-label">Total Arrears</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="collectionRate">-</div>
+                    <div class="stat-label">Collection Rate</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="monthlyCollections">-</div>
+                    <div class="stat-label">This Month</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="pendingInvoices">-</div>
+                    <div class="stat-label">Pending Invoices</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Exams Tab -->
+        <div id="examsTab" class="report-tab" style="display: none;">
+            <div class="report-section">
+                <h3 class="section-title">
+                    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M13.5 1.5l-10 7L2 10l1.5 1.5L9 14V1.5z"/></svg>
+                    Exam Reports
+                </h3>
+                <div class="cds--row">
+                    <div class="cds--col-md-3">
+                        <div class="report-card" onclick="navigateTo('exams/reports/')">
+                            <div class="report-card-icon exams">
+                                <svg width="24" height="24" viewBox="0 0 16 16" fill="currentColor"><path d="M13.5 1.5l-10 7L2 10l1.5 1.5L9 14V1.5z"/></svg>
+                            </div>
+                            <h3>Class Reports</h3>
+                            <p>Class-wise exam performance</p>
+                        </div>
+                    </div>
+                    <div class="cds--col-md-3">
+                        <div class="report-card" onclick="navigateTo('exams/reports/?tab=student')">
+                            <div class="report-card-icon students">
+                                <svg width="24" height="24" viewBox="0 0 16 16" fill="currentColor"><path d="M8 8a3 3 0 100-6 3 3 0 000 6z"/></svg>
+                            </div>
+                            <h3>Student Reports</h3>
+                            <p>Individual student performance</p>
+                        </div>
+                    </div>
+                    <div class="cds--col-md-3">
+                        <div class="report-card" onclick="navigateTo('exams/reports/?tab=subject')">
+                            <div class="report-card-icon exams">
+                                <svg width="24" height="24" viewBox="0 0 16 16" fill="currentColor"><path d="M2 3h12v2H2V3zm0 4h12v2H2V7zm0 4h8v2H2v-2z"/></svg>
+                            </div>
+                            <h3>Subject Analysis</h3>
+                            <p>Subject-wise performance breakdown</p>
+                        </div>
+                    </div>
+                    <div class="cds--col-md-3">
+                        <div class="report-card" onclick="navigateTo('exams/sets/')">
+                            <div class="report-card-icon exams">
+                                <svg width="24" height="24" viewBox="0 0 16 16" fill="currentColor"><path d="M14 2H2a1 1 0 00-1 1v12a1 1 0 001 1h12a1 1 0 001-1V3a1 1 0 00-1-1zm0 2v4h-12V4h12zm-12 6v4h12v-4H2zm0 6v2h12v-2H2z"/></svg>
+                            </div>
+                            <h3>Exam Sets</h3>
+                            <p>Manage exam sets and schedules</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Exam Stats -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="avgScore">-</div>
+                    <div class="stat-label">Average Score</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="passRate">-</div>
+                    <div class="stat-label">Pass Rate</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="topPerformers">-</div>
+                    <div class="stat-label">Top Performers</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="examsCompleted">-</div>
+                    <div class="stat-label">Exams Completed</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading -->
+        <div id="loadingState" class="empty-state" style="display: none;">
+            <div class="cds--loading">
+                <svg class="cds--loading__svg" viewBox="0 0 100 100">
+                    <circle class="cds--loading__stroke" cx="50" cy="50" r="40"></circle>
+                </svg>
+            </div>
+            <p style="margin-top: var(--carbon-spacing-04);">Generating report...</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentTab = 'overview';
+
+    async function loadFilters() {
+        // Academic years
+        try {
+            const yearsRes = await api.get('/api/schools/academic-years/?page=1&page_size=50');
+            if (yearsRes.ok) {
+                const data = await yearsRes.json();
+                const select = document.getElementById('yearFilter');
+                data.results.forEach(year => {
+                    const opt = document.createElement('option');
+                    opt.value = year.id;
+                    opt.textContent = year.name;
+                    if (year.is_current) opt.selected = true;
+                    select.appendChild(opt);
+                });
+            }
+        } catch (e) { console.log('Could not load years'); }
+
+        // Terms
+        try {
+            const termsRes = await api.get('/api/schools/terms/?page=1&page_size=50');
+            if (termsRes.ok) {
+                const data = await termsRes.json();
+                const select = document.getElementById('termFilter');
+                data.results.forEach(term => {
+                    const opt = document.createElement('option');
+                    opt.value = term.id;
+                    opt.textContent = term.name;
+                    select.appendChild(opt);
+                });
+            }
+        } catch (e) { console.log('Could not load terms'); }
+
+        // Classes
+        try {
+            const classesRes = await api.get('/api/academic/classes/?page=1&page_size=100');
+            if (classesRes.ok) {
+                const data = await classesRes.json();
+                const select = document.getElementById('classFilter');
+                data.results.forEach(cls => {
+                    const opt = document.createElement('option');
+                    opt.value = cls.id;
+                    opt.textContent = cls.name;
+                    select.appendChild(opt);
+                });
+            }
+        } catch (e) { console.log('Could not load classes'); }
+    }
+
+    function switchTab(tab) {
+        currentTab = tab;
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelector(`.tab-btn[onclick="switchTab('${tab}')"]`).classList.add('active');
+
+        document.querySelectorAll('.report-tab').forEach(el => el.style.display = 'none');
+        document.getElementById(`${tab}Tab`).style.display = 'block';
+
+        if (tab !== 'overview') {
+            loadTabData(tab);
+        }
+    }
+
+    async function loadTabData(tab) {
+        document.getElementById('loadingState').style.display = 'block';
+
+        try {
+            if (tab === 'students') {
+                await loadStudentStats();
+            } else if (tab === 'staff') {
+                await loadStaffStats();
+            } else if (tab === 'finance') {
+                await loadFinanceStats();
+            } else if (tab === 'exams') {
+                await loadExamStats();
+            }
+        } catch (e) {
+            console.log('Error loading tab data');
+        }
+
+        document.getElementById('loadingState').style.display = 'none';
+    }
+
+    async function loadStudentStats() {
+        try {
+            const res = await api.get('/api/students/students/?page=1&page_size=1');
+            if (res.ok) {
+                const data = await res.json();
+                document.getElementById('totalStudents').textContent = data.count || '-';
+                document.getElementById('activeStudents').textContent = data.count || '-';
+            }
+        } catch (e) { console.log('Could not load student stats'); }
+
+        // Mock data for other stats
+        document.getElementById('newEnrollments').textContent = '23';
+        document.getElementById('avgClassSize').textContent = '32';
+        document.getElementById('retentionRate').textContent = '94%';
+    }
+
+    async function loadStaffStats() {
+        try {
+            const res = await api.get('/api/staff/staff/?page=1&page_size=1');
+            if (res.ok) {
+                const data = await res.json();
+                document.getElementById('totalStaff').textContent = data.count || '-';
+            }
+        } catch (e) { console.log('Could not load staff stats'); }
+
+        // Mock data
+        document.getElementById('totalTeachers').textContent = '24';
+        document.getElementById('totalAdmin').textContent = '8';
+        document.getElementById('pupilTeacherRatio').textContent = '25:1';
+        document.getElementById('staffTurnover').textContent = '2%';
+    }
+
+    async function loadFinanceStats() {
+        try {
+            const res = await api.get('/api/finance/invoices/?page=1&page_size=1');
+            if (res.ok) {
+                const data = await res.json();
+                document.getElementById('pendingInvoices').textContent = data.count || '-';
+            }
+        } catch (e) { console.log('Could not load finance stats'); }
+
+        // Mock data
+        document.getElementById('totalArrears').textContent = 'UGX 12.5M';
+        document.getElementById('collectionRate').textContent = '78%';
+        document.getElementById('monthlyCollections').textContent = 'UGX 45M';
+    }
+
+    async function loadExamStats() {
+        // Mock data
+        document.getElementById('avgScore').textContent = '68%';
+        document.getElementById('passRate').textContent = '82%';
+        document.getElementById('topPerformers').textContent = '15';
+        document.getElementById('examsCompleted').textContent = '24';
+    }
+
+    async function generateReport() {
+        showToast('Generating report...', 'info');
+        await loadTabData(currentTab);
+    }
+
+    function navigateTo(url) {
+        window.location.href = '/' + url;
+    }
+
+    function toggleExportMenu() {
+        document.getElementById('exportMenu').classList.toggle('show');
+    }
+
+    function exportReport(format) {
+        showToast(`Exporting report as ${format.toUpperCase()}...`, 'info');
+        document.getElementById('exportMenu').classList.remove('show');
+    }
+
+    // Close export menu when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.export-dropdown')) {
+            document.getElementById('exportMenu').classList.remove('show');
+        }
+    });
+
+    async function loadOverviewStats() {
+        // Students
+        try {
+            const res = await api.get('/api/students/students/?page=1&page_size=1');
+            if (res.ok) {
+                const data = await res.json();
+                document.getElementById('totalStudents').textContent = data.count || '0';
+            }
+        } catch (e) { console.log('Could not load students'); }
+
+        // Staff
+        try {
+            const res = await api.get('/api/staff/staff/?page=1&page_size=1');
+            if (res.ok) {
+                const data = await res.json();
+                document.getElementById('totalStaff').textContent = data.count || '0';
+            }
+        } catch (e) { console.log('Could not load staff'); }
+
+        // Mock other stats
+        document.getElementById('totalRevenue').textContent = 'UGX 156M';
+        document.getElementById('avgAttendance').textContent = '89%';
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadFilters();
+        loadOverviewStats();
+    });
+</script>
+{% endblock %}

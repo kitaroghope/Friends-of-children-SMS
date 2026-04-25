@@ -1,0 +1,224 @@
+{% extends 'base.html' %}
+
+{% block title %}Parents - Friends of Children SMS{% endblock %}
+
+{% block body %}
+<style>
+    .page-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--carbon-spacing-05); }
+    .page-title h1 { margin: 0; }
+    .filters-bar { display: flex; gap: var(--carbon-spacing-04); flex-wrap: wrap; margin-bottom: var(--carbon-spacing-05); }
+    .filters-bar .cds--select { min-width: 150px; }
+    .filters-bar .cds--text-input { min-width: 200px; }
+    .action-cell { display: flex; gap: var(--carbon-spacing-03); }
+    .empty-state { text-align: center; padding: 4rem 2rem; color: var(--carbon-gray-70); }
+    .empty-state svg { width: 64px; height: 64px; margin-bottom: var(--carbon-spacing-04); }
+    .status-badge { display: inline-flex; align-items: center; padding: 0.25rem 0.75rem; border-radius: 1rem; font-size: 0.75rem; font-weight: 500; }
+    .status-active { background: rgba(36, 161, 72, 0.1); color: var(--carbon-green-60); }
+    .status-inactive { background: rgba(218, 30, 40, 0.1); color: var(--carbon-red-60); }
+    .parent-card { display: flex; align-items: center; gap: var(--carbon-spacing-04); }
+    .parent-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--carbon-purple-60); color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; }
+</style>
+
+<div class="main-content">
+    <div class="cds--grid">
+        <!-- Breadcrumb -->
+        <div class="breadcrumb" id="parentsListBreadcrumb">
+            <a href="/dashboard/">Home</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-current">Parents</span>
+        </div>
+
+        <!-- Page Title & Actions -->
+        <div class="page-title">
+            <h1>All Parents</h1>
+            <div>
+                <a href="/parents/link/" class="cds--btn cds--btn--tertiary" style="margin-right: var(--carbon-spacing-03);">Link to Student</a>
+                <a href="/parents/add/" class="cds--btn cds--btn--primary">Add Parent</a>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filters-bar">
+            <div class="cds--form-item">
+                <div class="cds--select">
+                    <select id="relationshipFilter" class="cds--select-input" onchange="loadParents()">
+                        <option value="">All Relationships</option>
+                        <option value="father">Father</option>
+                        <option value="mother">Mother</option>
+                        <option value="guardian">Guardian</option>
+                        <option value="other">Other</option>
+                    </select>
+                    <svg class="cds--select__arrow" viewBox="0 0 16 16" width="16" height="16"><path d="M8 11L3 6h10l-5 5z"/></svg>
+                </div>
+            </div>
+            <div class="cds--form-item">
+                <input type="text" id="searchInput" class="cds--text-input" placeholder="Search by name, phone..." onkeyup="debounceSearch(event)">
+            </div>
+            <button class="cds--btn cds--btn--secondary" onclick="loadParents()">Search</button>
+        </div>
+
+        <!-- Results Info -->
+        <div id="resultsInfo" style="margin-bottom: var(--carbon-spacing-04); color: var(--carbon-gray-70); font-size: 0.875rem;"></div>
+
+        <!-- Parents Table -->
+        <div class="cds--tile">
+            <table class="cds--data-table" id="parentTable">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Phone</th>
+                        <th>Email</th>
+                        <th>Relationship</th>
+                        <th>Children</th>
+                        <th>Emergency Contact</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="parentTableBody">
+                    <!-- Dynamic content -->
+                </tbody>
+            </table>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="empty-state" style="display: none;">
+                <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="4"/><path d="M4 19v-2a8 8 0 0116 0v2"/><path d="M9 12h6"/></svg>
+                <h3>No Parents Found</h3>
+                <p>No parents match your search criteria. Add a new parent to get started.</p>
+                <a href="/parents/add/" class="cds--btn cds--btn--primary" style="margin-top: var(--carbon-spacing-04);">Add Parent</a>
+            </div>
+
+            <!-- Loading -->
+            <div id="loadingState" class="empty-state">
+                <div class="cds--loading">
+                    <svg class="cds--loading__svg" viewBox="0 0 100 100">
+                        <circle class="cds--loading__stroke" cx="50" cy="50" r="40"></circle>
+                    </svg>
+                </div>
+                <p style="margin-top: var(--carbon-spacing-04);">Loading parents...</p>
+            </div>
+
+            <!-- Pagination -->
+            <div id="pagination" style="display: none; margin-top: var(--carbon-spacing-05); display: flex; justify-content: space-between; align-items: center;">
+                <div id="paginationInfo" style="color: var(--carbon-gray-70); font-size: 0.875rem;"></div>
+                <div class="cds--pagination">
+                    <button class="cds--pagination__button" id="prevBtn" onclick="changePage(-1)">
+                        <svg class="cds--pagination__button-icon" viewBox="0 0 16 16"><path d="M10 13L6 8l4-5"/></svg>
+                    </button>
+                    <span id="pageInfo" style="margin: 0 var(--carbon-spacing-04);">Page 1</span>
+                    <button class="cds--pagination__button" id="nextBtn" onclick="changePage(1)">
+                        <svg class="cds--pagination__button-icon" viewBox="0 0 16 16"><path d="M6 3l4 5-4 5"/></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentPage = 1;
+    let pageSize = 20;
+    let searchTimeout = null;
+
+    async function loadParents() {
+        const search = document.getElementById('searchInput').value;
+        const relationshipFilter = document.getElementById('relationshipFilter').value;
+
+        document.getElementById('loadingState').style.display = 'block';
+        document.getElementById('parentTable').style.display = 'none';
+        document.getElementById('emptyState').style.display = 'none';
+
+        let url = `/api/parents/parents/?page=${currentPage}&page_size=${pageSize}`;
+        if (search) url += `&search=${encodeURIComponent(search)}`;
+        if (relationshipFilter) url += `&relationship=${encodeURIComponent(relationshipFilter)}`;
+
+        try {
+            const res = await api.get(url);
+            if (res.ok) {
+                const data = await res.json();
+                displayParents(data);
+            } else {
+                showEmptyState();
+            }
+        } catch (e) {
+            console.log('Error loading parents:', e);
+            showEmptyState();
+        }
+    }
+
+    function displayParents(data) {
+        const tbody = document.getElementById('parentTableBody');
+        tbody.innerHTML = '';
+
+        if (data.results && data.results.length > 0) {
+            data.results.forEach(parent => {
+                const initials = `${(parent.first_name || '')[0] || ''}${(parent.last_name || '')[0] || ''}`.toUpperCase();
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>
+                        <div class="parent-card">
+                            <div class="parent-avatar">${initials}</div>
+                            <div>
+                                <div style="font-weight: 500;">${parent.first_name || ''} ${parent.last_name || ''}</div>
+                                <div style="font-size: 0.75rem; color: var(--carbon-gray-70);">${parent.address || ''}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>${parent.phone || 'N/A'}</td>
+                    <td>${parent.email || 'N/A'}</td>
+                    <td style="text-transform: capitalize;">${parent.relationship || 'N/A'}</td>
+                    <td>${parent.children_count || 0}</td>
+                    <td>
+                        ${parent.is_emergency_contact ? '<span class="status-badge status-active">Yes</span>' : '<span class="status-badge status-inactive">No</span>'}
+                    </td>
+                    <td>
+                        <div class="action-cell">
+                            <button onclick="viewParent(${parent.id})" class="cds--btn cds--btn--ghost cds--btn--sm">View</button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('parentTable').style.display = 'table';
+            document.getElementById('pagination').style.display = 'flex';
+
+            // Update pagination
+            const totalPages = Math.ceil(data.count / pageSize);
+            document.getElementById('pageInfo').textContent = `Page ${currentPage} of ${totalPages || 1}`;
+            document.getElementById('resultsInfo').textContent = `Showing ${data.results.length} of ${data.count} parents`;
+            document.getElementById('prevBtn').disabled = currentPage === 1;
+            document.getElementById('nextBtn').disabled = currentPage >= totalPages;
+        } else {
+            showEmptyState();
+        }
+    }
+
+    function showEmptyState() {
+        document.getElementById('loadingState').style.display = 'none';
+        document.getElementById('parentTable').style.display = 'none';
+        document.getElementById('emptyState').style.display = 'block';
+        document.getElementById('pagination').style.display = 'none';
+        document.getElementById('resultsInfo').textContent = 'No parents found';
+    }
+
+    function changePage(delta) {
+        currentPage += delta;
+        loadParents();
+    }
+
+    function debounceSearch(event) {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            currentPage = 1;
+            loadParents();
+        }, 300);
+    }
+
+    function viewParent(id) {
+        window.location.href = `/parents/${id}/`;
+    }
+
+    document.addEventListener('DOMContentLoaded', loadParents);
+</script>
+{% endblock %}

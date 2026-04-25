@@ -1,0 +1,604 @@
+{% extends 'base.html' %}
+
+{% block title %}Exam Sets - Friends of Children SMS{% endblock %}
+
+{% block body %}
+<style>
+    .page-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--carbon-spacing-05); }
+    .page-title h1 { margin: 0; }
+    .filters-bar { display: flex; gap: var(--carbon-spacing-04); flex-wrap: wrap; margin-bottom: var(--carbon-spacing-05); }
+    .filters-bar .cds--select { min-width: 150px; }
+    .filters-bar .cds--text-input { min-width: 200px; }
+    .action-cell { display: flex; gap: var(--carbon-spacing-03); }
+    .empty-state { text-align: center; padding: 4rem 2rem; color: var(--carbon-gray-70); }
+    .empty-state svg { width: 64px; height: 64px; margin-bottom: var(--carbon-spacing-04); }
+    .status-badge { display: inline-flex; align-items: center; padding: 0.25rem 0.75rem; border-radius: 1rem; font-size: 0.75rem; font-weight: 500; }
+    .status-active { background: rgba(36, 161, 72, 0.1); color: var(--carbon-green-60); }
+    .status-inactive { background: rgba(218, 30, 40, 0.1); color: var(--carbon-red-60); }
+    .status-published { background: rgba(15, 98, 254, 0.1); color: var(--carbon-blue-60); }
+    .exam-card { background: var(--carbon-white); border: 1px solid var(--carbon-gray-20); border-radius: 4px; padding: var(--carbon-spacing-04); transition: all 240ms; }
+    .exam-card:hover { border-color: var(--carbon-blue-60); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+    .exam-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: var(--carbon-spacing-03); }
+    .exam-name { font-size: 1.125rem; font-weight: 600; margin: 0; }
+    .exam-dates { font-size: 0.875rem; color: var(--carbon-gray-70); }
+    .exam-stats { display: flex; gap: var(--carbon-spacing-04); margin-top: var(--carbon-spacing-03); padding-top: var(--carbon-spacing-03); border-top: 1px solid var(--carbon-gray-20); }
+    .exam-stat { text-align: center; }
+    .exam-stat-value { font-size: 1.25rem; font-weight: 600; }
+    .exam-stat-label { font-size: 0.75rem; color: var(--carbon-gray-70); }
+    .grid-view { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: var(--carbon-spacing-04); }
+    .list-view { display: none; }
+    .list-view.active { display: table; }
+    .view-toggle { display: flex; gap: var(--carbon-spacing-02); }
+    .view-toggle button { padding: var(--carbon-spacing-02) var(--carbon-spacing-03); }
+    .view-toggle button.active { background: var(--carbon-blue-60); color: white; }
+
+    /* Modal Styles */
+    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: flex-start; z-index: 9000; overflow-y: auto; padding: var(--carbon-spacing-05); }
+    .modal-overlay.active { display: flex; }
+    .modal { background: var(--carbon-white); width: 100%; max-width: 600px; max-height: calc(100vh - 2rem); overflow-y: auto; border-radius: 4px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; padding: var(--carbon-spacing-05); border-bottom: 1px solid var(--carbon-gray-20); }
+    .modal-header h2 { margin: 0; font-size: 1.25rem; }
+    .modal-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; padding: 0; line-height: 1; color: var(--carbon-gray-70); }
+    .modal-body { padding: var(--carbon-spacing-05); }
+    .modal-form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--carbon-spacing-04); margin-bottom: var(--carbon-spacing-04); }
+    .modal-form-group { margin-bottom: var(--carbon-spacing-04); }
+    .modal-form-group label { display: block; margin-bottom: var(--carbon-spacing-02); font-weight: 500; font-size: 0.875rem; }
+    .modal-form-actions { display: flex; gap: var(--carbon-spacing-04); justify-content: flex-end; padding-top: var(--carbon-spacing-05); border-top: 1px solid var(--carbon-gray-20); margin-top: var(--carbon-spacing-05); }
+    .detail-section { margin-bottom: var(--carbon-spacing-05); }
+    .detail-section h4 { margin-bottom: var(--carbon-spacing-03); padding-bottom: var(--carbon-spacing-02); border-bottom: 1px solid var(--carbon-gray-20); }
+</style>
+
+<header class="page-header">
+    <div class="cds--grid">
+        <h1>Exam Sets</h1>
+        <a href="/dashboard/">&larr; Back to Dashboard</a>
+    </div>
+</header>
+
+<div class="main-content">
+    <div class="cds--grid">
+        <!-- Breadcrumb -->
+        <div class="breadcrumb" id="examSetsBreadcrumb">
+            <a href="/dashboard/">Home</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-current">Exam Sets</span>
+        </div>
+        <!-- Page Title & Actions -->
+        <div class="page-title">
+            <h1>All Exam Sets</h1>
+            <div style="display: flex; gap: var(--carbon-spacing-04); align-items: center;">
+                <div class="view-toggle">
+                    <button class="cds--btn cds--btn--ghost cds--btn--sm active" onclick="setView('grid')" id="gridViewBtn">Grid</button>
+                    <button class="cds--btn cds--btn--ghost cds--btn--sm" onclick="setView('list')" id="listViewBtn">List</button>
+                </div>
+                <button class="cds--btn cds--btn--primary" onclick="openAddExamModal()">Create Exam Set</button>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filters-bar">
+            <div class="cds--form-item">
+                <div class="cds--select">
+                    <select id="classFilter" class="cds--select-input" onchange="loadExamSets()">
+                        <option value="">All Classes</option>
+                    </select>
+                    <svg class="cds--select__arrow" viewBox="0 0 16 16" width="16" height="16"><path d="M8 11L3 6h10l-5 5z"/></svg>
+                </div>
+            </div>
+            <div class="cds--form-item">
+                <div class="cds--select">
+                    <select id="statusFilter" class="cds--select-input" onchange="loadExamSets()">
+                        <option value="">All Status</option>
+                        <option value="published">Published</option>
+                        <option value="draft">Draft</option>
+                    </select>
+                    <svg class="cds--select__arrow" viewBox="0 0 16 16" width="16" height="16"><path d="M8 11L3 6h10l-5 5z"/></svg>
+                </div>
+            </div>
+            <div class="cds--form-item">
+                <input type="text" id="searchInput" class="cds--text-input" placeholder="Search exam sets..." onkeyup="debounceSearch(event)">
+            </div>
+            <button class="cds--btn cds--btn--secondary" onclick="loadExamSets()">Search</button>
+        </div>
+
+        <!-- Results Info -->
+        <div id="resultsInfo" style="margin-bottom: var(--carbon-spacing-04); color: var(--carbon-gray-70); font-size: 0.875rem;"></div>
+
+        <!-- Exam Sets Grid View -->
+        <div id="gridView" class="grid-view active">
+            <!-- Dynamic content -->
+        </div>
+
+        <!-- Exam Sets List View -->
+        <div id="listView" class="cds--tile list-view">
+            <table class="cds--data-table" id="examTable">
+                <thead>
+                    <tr>
+                        <th>Exam Name</th>
+                        <th>Class</th>
+                        <th>Term</th>
+                        <th>Period</th>
+                        <th>Exams</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="examTableBody">
+                    <!-- Dynamic content -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="empty-state" style="display: none;">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+            <h3>No Exam Sets Found</h3>
+            <p>No exam sets match your search criteria. Create an exam set to get started.</p>
+            <button class="cds--btn cds--btn--primary" style="margin-top: var(--carbon-spacing-04);" onclick="openAddExamModal()">Create Exam Set</button>
+        </div>
+
+        <!-- Loading -->
+        <div id="loadingState" class="empty-state">
+            <div class="cds--loading">
+                <svg class="cds--loading__svg" viewBox="0 0 100 100">
+                    <circle class="cds--loading__stroke" cx="50" cy="50" r="40"></circle>
+                </svg>
+            </div>
+            <p style="margin-top: var(--carbon-spacing-04);">Loading exam sets...</p>
+        </div>
+
+        <!-- Pagination -->
+        <div id="pagination" style="display: none; margin-top: var(--carbon-spacing-05); display: flex; justify-content: space-between; align-items: center;">
+            <div id="paginationInfo" style="color: var(--carbon-gray-70); font-size: 0.875rem;"></div>
+            <div class="cds--pagination">
+                <button class="cds--pagination__button" id="prevBtn" onclick="changePage(-1)">
+                    <svg class="cds--pagination__button-icon" viewBox="0 0 16 16"><path d="M10 13L6 8l4-5"/></svg>
+                </button>
+                <span id="pageInfo" style="margin: 0 var(--carbon-spacing-04);">Page 1</span>
+                <button class="cds--pagination__button" id="nextBtn" onclick="changePage(1)">
+                    <svg class="cds--pagination__button-icon" viewBox="0 0 16 16"><path d="M6 3l4 5-4 5"/></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Exam Modal -->
+<div id="examModal" class="modal-overlay">
+    <div class="modal" style="max-width: 700px;">
+        <div class="modal-header">
+            <h2 id="modalTitle">Create Exam Set</h2>
+            <button class="modal-close" onclick="closeExamModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="examForm">
+                <input type="hidden" id="examId" name="id">
+                <div class="modal-form-row">
+                    <div class="modal-form-group">
+                        <label for="examName">Exam Set Name *</label>
+                        <input type="text" id="examName" name="name" class="cds--text-input" placeholder="e.g., End of Term Examination" required>
+                    </div>
+                </div>
+                <div class="modal-form-row">
+                    <div class="modal-form-group">
+                        <label for="examClass">Class *</label>
+                        <div class="cds--select">
+                            <select id="examClass" name="class_obj" class="cds--select-input" required>
+                                <option value="">Select Class...</option>
+                            </select>
+                            <svg class="cds--select__arrow" viewBox="0 0 16 16" width="16" height="16"><path d="M8 11L3 6h10l-5 5z"/></svg>
+                        </div>
+                    </div>
+                    <div class="modal-form-group">
+                        <label for="examTerm">Term *</label>
+                        <div class="cds--select">
+                            <select id="examTerm" name="term" class="cds--select-input" required>
+                                <option value="">Select Term...</option>
+                            </select>
+                            <svg class="cds--select__arrow" viewBox="0 0 16 16" width="16" height="16"><path d="M8 11L3 6h10l-5 5z"/></svg>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-form-row">
+                    <div class="modal-form-group">
+                        <label for="startDate">Start Date</label>
+                        <input type="date" id="startDate" name="start_date" class="cds--text-input">
+                    </div>
+                    <div class="modal-form-group">
+                        <label for="endDate">End Date</label>
+                        <input type="date" id="endDate" name="end_date" class="cds--text-input">
+                    </div>
+                </div>
+                <div class="modal-form-group">
+                    <label for="examDescription">Description</label>
+                    <textarea id="examDescription" name="description" class="cds--text-input" rows="3" placeholder="Optional description..."></textarea>
+                </div>
+                <div class="modal-form-actions">
+                    <button type="button" class="cds--btn cds--btn--secondary" onclick="closeExamModal()">Cancel</button>
+                    <button type="submit" class="cds--btn cds--btn--primary" id="examSubmitBtn">Create Exam Set</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- View Exam Detail Modal -->
+<div id="detailModal" class="modal-overlay">
+    <div class="modal" style="max-width: 700px;">
+        <div class="modal-header">
+            <h2 id="detailTitle">Exam Set Details</h2>
+            <button class="modal-close" onclick="closeDetailModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div id="examDetailContent">
+                <!-- Dynamic content -->
+            </div>
+            <div class="modal-form-actions">
+                <button type="button" class="cds--btn cds--btn--secondary" onclick="closeDetailModal()">Close</button>
+                <button type="button" class="cds--btn cds--btn--primary" id="addExamBtn" onclick="openAddExamToSet()">Add Subject Exam</button>
+                <button type="button" class="cds--btn cds--btn--tertiary" id="publishBtn" onclick="publishExamSet()">Publish Results</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentPage = 1;
+    let pageSize = 20;
+    let searchTimeout = null;
+    let currentView = 'grid';
+    let selectedExamSet = null;
+
+    async function loadClasses() {
+        try {
+            const res = await api.get('/api/academic/classes/?page=1&page_size=100');
+            if (res.ok) {
+                const data = await res.json();
+                const select = document.getElementById('classFilter');
+                const modalSelect = document.getElementById('examClass');
+                data.results.forEach(cls => {
+                    const option1 = document.createElement('option');
+                    option1.value = cls.id;
+                    option1.textContent = cls.display_name || cls.name;
+                    select.appendChild(option1);
+
+                    const option2 = document.createElement('option');
+                    option2.value = cls.id;
+                    option2.textContent = cls.display_name || cls.name;
+                    modalSelect.appendChild(option2);
+                });
+            }
+        } catch (e) {
+            console.log('Could not load classes');
+        }
+    }
+
+    async function loadTerms() {
+        try {
+            const res = await api.get('/api/schools/terms/?page=1&page_size=100');
+            if (res.ok) {
+                const data = await res.json();
+                const select = document.getElementById('examTerm');
+                data.results.forEach(term => {
+                    const option = document.createElement('option');
+                    option.value = term.id;
+                    option.textContent = term.name;
+                    select.appendChild(option);
+                });
+            }
+        } catch (e) {
+            console.log('Could not load terms');
+        }
+    }
+
+    async function loadExamSets() {
+        const search = document.getElementById('searchInput').value;
+        const classFilter = document.getElementById('classFilter').value;
+        const statusFilter = document.getElementById('statusFilter').value;
+
+        document.getElementById('loadingState').style.display = 'block';
+        document.getElementById('gridView').style.display = 'none';
+        document.getElementById('listView').classList.remove('active');
+        document.getElementById('emptyState').style.display = 'none';
+
+        let url = `/api/exams/exam-sets/?page=${currentPage}&page_size=${pageSize}`;
+        if (search) url += `&search=${encodeURIComponent(search)}`;
+        if (classFilter) url += `&class_obj=${classFilter}`;
+        if (statusFilter === 'published') url += `&is_published=true`;
+        if (statusFilter === 'draft') url += `&is_published=false`;
+
+        try {
+            const res = await api.get(url);
+            if (res.ok) {
+                const data = await res.json();
+                displayExamSets(data);
+            } else {
+                showEmptyState();
+            }
+        } catch (e) {
+            console.log('Error loading exam sets:', e);
+            showEmptyState();
+        }
+    }
+
+    function displayExamSets(data) {
+        const gridView = document.getElementById('gridView');
+        const tbody = document.getElementById('examTableBody');
+        gridView.innerHTML = '';
+        tbody.innerHTML = '';
+
+        if (data.results && data.results.length > 0) {
+            data.results.forEach(exam => {
+                const statusClass = exam.is_published ? 'status-published' : 'status-active';
+                const statusText = exam.is_published ? 'Published' : 'Draft';
+                const dateRange = exam.start_date && exam.end_date
+                    ? `${formatDate(exam.start_date)} - ${formatDate(exam.end_date)}`
+                    : 'Dates not set';
+
+                // Grid view card
+                const card = document.createElement('div');
+                card.className = 'exam-card';
+                card.innerHTML = `
+                    <div class="exam-header">
+                        <div>
+                            <h3 class="exam-name">${exam.name}</h3>
+                            <span class="exam-dates">${exam.class_name || 'No class'} | ${exam.term_name || 'No term'}</span>
+                        </div>
+                        <span class="status-badge ${statusClass}">${statusText}</span>
+                    </div>
+                    <div class="exam-stats">
+                        <div class="exam-stat">
+                            <div class="exam-stat-value">${exam.exams_count || 0}</div>
+                            <div class="exam-stat-label">Subjects</div>
+                        </div>
+                        <div class="exam-stat">
+                            <div class="exam-stat-value">${exam.results_count || 0}</div>
+                            <div class="exam-stat-label">Results</div>
+                        </div>
+                    </div>
+                    <div style="margin-top: var(--carbon-spacing-04); display: flex; gap: var(--carbon-spacing-03);">
+                        <button class="cds--btn cds--btn--ghost cds--btn--sm" onclick="viewExamSet(${exam.id})">View Details</button>
+                        <button class="cds--btn cds--btn--ghost cds--btn--sm" onclick="editExamSet(${exam.id})">Edit</button>
+                    </div>
+                `;
+                gridView.appendChild(card);
+
+                // List view row
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${exam.name}</strong></td>
+                    <td>${exam.class_name || 'N/A'}</td>
+                    <td>${exam.term_name || 'N/A'}</td>
+                    <td>${dateRange}</td>
+                    <td>${exam.exams_count || 0}</td>
+                    <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                    <td>
+                        <div class="action-cell">
+                            <button class="cds--btn cds--btn--ghost cds--btn--sm" onclick="viewExamSet(${exam.id})">View</button>
+                            <button class="cds--btn cds--btn--ghost cds--btn--sm" onclick="editExamSet(${exam.id})">Edit</button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('gridView').style.display = 'grid';
+            document.getElementById('pagination').style.display = 'flex';
+
+            // Update pagination
+            const totalPages = Math.ceil(data.count / pageSize);
+            document.getElementById('pageInfo').textContent = `Page ${currentPage} of ${totalPages || 1}`;
+            document.getElementById('resultsInfo').textContent = `Showing ${data.results.length} of ${data.count} exam sets`;
+            document.getElementById('prevBtn').disabled = currentPage === 1;
+            document.getElementById('nextBtn').disabled = currentPage >= totalPages;
+        } else {
+            showEmptyState();
+        }
+    }
+
+    function showEmptyState() {
+        document.getElementById('loadingState').style.display = 'none';
+        document.getElementById('gridView').style.display = 'none';
+        document.getElementById('listView').classList.remove('active');
+        document.getElementById('emptyState').style.display = 'block';
+        document.getElementById('pagination').style.display = 'none';
+        document.getElementById('resultsInfo').textContent = 'No exam sets found';
+    }
+
+    function changePage(delta) {
+        currentPage += delta;
+        loadExamSets();
+    }
+
+    function debounceSearch(event) {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            currentPage = 1;
+            loadExamSets();
+        }, 300);
+    }
+
+    function setView(view) {
+        currentView = view;
+        document.getElementById('gridView').style.display = view === 'grid' ? 'grid' : 'none';
+        document.getElementById('listView').classList.toggle('active', view === 'list');
+        document.getElementById('gridViewBtn').classList.toggle('active', view === 'grid');
+        document.getElementById('listViewBtn').classList.toggle('active', view === 'list');
+    }
+
+    function formatDate(dateStr) {
+        if (!dateStr) return '';
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('en-UG', { day: '2-digit', month: 'short', year: 'numeric' });
+    }
+
+    function openAddExamModal() {
+        document.getElementById('modalTitle').textContent = 'Create Exam Set';
+        document.getElementById('examForm').reset();
+        document.getElementById('examId').value = '';
+        document.getElementById('examModal').classList.add('active');
+    }
+
+    async function editExamSet(id) {
+        try {
+            const res = await api.get(`/api/exams/exam-sets/${id}/`);
+            if (res.ok) {
+                const exam = await res.json();
+                document.getElementById('modalTitle').textContent = 'Edit Exam Set';
+                document.getElementById('examId').value = exam.id;
+                document.getElementById('examName').value = exam.name || '';
+                document.getElementById('examClass').value = exam.class_obj || '';
+                document.getElementById('examTerm').value = exam.term || '';
+                document.getElementById('startDate').value = exam.start_date || '';
+                document.getElementById('endDate').value = exam.end_date || '';
+                document.getElementById('examDescription').value = exam.description || '';
+                document.getElementById('examModal').classList.add('active');
+            }
+        } catch (e) {
+            alert('Error loading exam set: ' + e.message);
+        }
+    }
+
+    async function viewExamSet(id) {
+        try {
+            const res = await api.get(`/api/exams/exam-sets/${id}/`);
+            if (res.ok) {
+                const exam = await res.json();
+                selectedExamSet = exam;
+
+                document.getElementById('detailTitle').textContent = exam.name;
+                document.getElementById('addExamBtn').style.display = exam.is_published ? 'none' : 'inline-block';
+                document.getElementById('publishBtn').style.display = exam.is_published ? 'none' : 'inline-block';
+                document.getElementById('publishBtn').textContent = exam.exams_count > 0 ? 'Publish Results' : 'Add Exams First';
+                document.getElementById('publishBtn').disabled = exam.exams_count === 0;
+
+                const content = document.getElementById('examDetailContent');
+                content.innerHTML = `
+                    <div class="detail-section">
+                        <h4>Exam Information</h4>
+                        <p><strong>Class:</strong> ${exam.class_name || 'N/A'}</p>
+                        <p><strong>Term:</strong> ${exam.term_name || 'N/A'}</p>
+                        <p><strong>Status:</strong> <span class="status-badge ${exam.is_published ? 'status-published' : 'status-active'}">${exam.is_published ? 'Published' : 'Draft'}</span></p>
+                        <p><strong>Period:</strong> ${formatDate(exam.start_date)} - ${formatDate(exam.end_date)}</p>
+                        ${exam.description ? `<p><strong>Description:</strong> ${exam.description}</p>` : ''}
+                    </div>
+                    <div class="detail-section">
+                        <h4>Subjects (${exam.exams?.length || 0})</h4>
+                        ${exam.exams && exam.exams.length > 0 ? `
+                            <table class="cds--data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Subject</th>
+                                        <th>Max Score</th>
+                                        <th>Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${exam.exams.map(e => `
+                                        <tr>
+                                            <td>${e.subject_name || 'N/A'}</td>
+                                            <td>${e.max_score || 100}</td>
+                                            <td>${formatDate(e.exam_date) || 'Not set'}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        ` : '<p style="color: var(--carbon-gray-70);">No subjects added yet.</p>'}
+                    </div>
+                    <div class="detail-section">
+                        <h4>Results Summary</h4>
+                        <p><strong>Total Results Entered:</strong> ${exam.results_count || 0}</p>
+                    </div>
+                `;
+
+                document.getElementById('detailModal').classList.add('active');
+            }
+        } catch (e) {
+            alert('Error loading exam set: ' + e.message);
+        }
+    }
+
+    function closeExamModal() {
+        document.getElementById('examModal').classList.remove('active');
+    }
+
+    function closeDetailModal() {
+        document.getElementById('detailModal').classList.remove('active');
+        selectedExamSet = null;
+    }
+
+    function openAddExamToSet() {
+        if (selectedExamSet) {
+            window.location.href = `/exams/results/?exam_set=${selectedExamSet.id}`;
+        }
+    }
+
+    async function publishExamSet() {
+        if (!selectedExamSet || selectedExamSet.exams_count === 0) return;
+
+        if (!confirm('Are you sure you want to publish results? This will make results visible to students and parents.')) return;
+
+        try {
+            const res = await api.patch(`/api/exams/exam-sets/${selectedExamSet.id}/`, { is_published: true });
+            if (res.ok) {
+                showToast('Exam results published successfully!', 'success');
+                closeDetailModal();
+                loadExamSets();
+            } else {
+                throw new Error('Failed to publish results');
+            }
+        } catch (e) {
+            alert('Error: ' + e.message);
+        }
+    }
+
+    document.getElementById('examForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const formData = new FormData(e.target);
+        const data = Object.fromEntries(formData.entries());
+
+        const examId = document.getElementById('examId').value;
+        const url = examId ? `/api/exams/exam-sets/${examId}/` : '/api/exams/exam-sets/';
+        const method = examId ? 'PATCH' : 'POST';
+
+        const submitBtn = document.getElementById('examSubmitBtn');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="cds--loading__svg" style="width:16px;height:16px;margin:0"><circle class="cds--loading__stroke" cx="8" cy="8" r="6"/></span> Saving...';
+
+        try {
+            const res = await api.request(url, { method, body: JSON.stringify(data) });
+
+            if (res.ok) {
+                closeExamModal();
+                loadExamSets();
+                showToast(examId ? 'Exam set updated!' : 'Exam set created!', 'success');
+            } else {
+                const error = await res.json();
+                throw new Error(error.detail || Object.values(error).flat().join(', ') || 'Failed to save');
+            }
+        } catch (e) {
+            alert('Error: ' + e.message);
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = examId ? 'Update Exam Set' : 'Create Exam Set';
+        }
+    });
+
+    // Close modals on overlay click
+    document.getElementById('examModal').addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) closeExamModal();
+    });
+    document.getElementById('detailModal').addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) closeDetailModal();
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        Breadcrumb.render('examSetsBreadcrumb');
+        loadClasses();
+        loadTerms();
+        loadExamSets();
+    });
+</script>
+{% endblock %}

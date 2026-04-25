@@ -28,15 +28,29 @@ class ExamSetSerializer(serializers.ModelSerializer):
     """Serializer for ExamSet model."""
     class_name = serializers.CharField(source='class_obj.name', read_only=True)
     term_name = serializers.CharField(source='term.name', read_only=True)
+    exams_count = serializers.SerializerMethodField()
+    results_count = serializers.SerializerMethodField()
+    exams = serializers.SerializerMethodField()
 
     class Meta:
         model = ExamSet
         fields = [
             'id', 'school', 'class_obj', 'class_name', 'term', 'term_name',
             'name', 'description', 'start_date', 'end_date',
-            'is_published', 'published_at', 'created_at', 'updated_at'
+            'is_published', 'published_at', 'exams_count', 'results_count', 'exams',
+            'created_at', 'updated_at'
         ]
         read_only_fields = ['published_at', 'created_at', 'updated_at']
+
+    def get_exams_count(self, obj):
+        return obj.exams.filter(is_active=True).count()
+
+    def get_results_count(self, obj):
+        from exams.models import Result
+        return Result.objects.filter(exam__exam_set=obj).count()
+
+    def get_exams(self, obj):
+        return ExamSerializer(obj.exams.filter(is_active=True), many=True).data
 
 
 class ExamSerializer(serializers.ModelSerializer):

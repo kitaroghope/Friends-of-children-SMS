@@ -1,0 +1,656 @@
+{% extends 'base.html' %}
+
+{% block title %}School Setup - Friends of Children SMS{% endblock %}
+
+{% block body %}
+<style>
+    .wizard-container { max-width: 800px; margin: 0 auto; }
+    .wizard-header { text-align: center; margin-bottom: var(--carbon-spacing-07); }
+    .wizard-header h1 { margin-bottom: var(--carbon-spacing-03); }
+    .wizard-header p { color: var(--carbon-gray-70); }
+
+    /* Progress Steps */
+    .wizard-progress { display: flex; justify-content: center; margin-bottom: var(--carbon-spacing-08); }
+    .wizard-step {
+        display: flex;
+        align-items: center;
+        margin: 0 var(--carbon-spacing-02);
+    }
+    .wizard-step-number {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--carbon-gray-20);
+        color: var(--carbon-gray-70);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 0.875rem;
+        transition: all 240ms;
+    }
+    .wizard-step.active .wizard-step-number { background: var(--carbon-blue-60); color: var(--carbon-white); }
+    .wizard-step.completed .wizard-step-number { background: var(--carbon-green-60); color: var(--carbon-white); }
+    .wizard-step-label { margin-left: var(--carbon-spacing-03); font-size: 0.875rem; color: var(--carbon-gray-70); display: none; }
+    .wizard-step.active .wizard-step-label, .wizard-step.completed .wizard-step-label { display: block; }
+    .wizard-step-connector { width: 24px; height: 2px; background: var(--carbon-gray-20); }
+
+    /* Step Content */
+    .wizard-step-content { display: none; }
+    .wizard-step-content.active { display: block; }
+
+    /* Form Elements */
+    .form-section { margin-bottom: var(--carbon-spacing-06); }
+    .form-section-title { font-size: 1rem; font-weight: 600; margin-bottom: var(--carbon-spacing-05); }
+    .checkbox-group { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--carbon-spacing-03); }
+    .checkbox-item {
+        display: flex;
+        align-items: center;
+        padding: var(--carbon-spacing-04);
+        background: var(--carbon-gray-10);
+        cursor: pointer;
+        transition: all 110ms;
+    }
+    .checkbox-item:hover { background: var(--carbon-gray-20); }
+    .checkbox-item input { margin-right: var(--carbon-spacing-03); }
+    .checkbox-item.checked { background: rgba(15, 98, 254, 0.1); border: 1px solid var(--carbon-blue-60); }
+
+    /* Term Dates */
+    .term-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--carbon-spacing-04); margin-bottom: var(--carbon-spacing-04); align-items: end; }
+
+    /* Navigation */
+    .wizard-nav { display: flex; justify-content: space-between; margin-top: var(--carbon-spacing-08); padding-top: var(--carbon-spacing-06); border-top: 1px solid var(--carbon-gray-20); }
+
+    /* Summary */
+    .summary-section { margin-bottom: var(--carbon-spacing-06); }
+    .summary-title { font-weight: 600; margin-bottom: var(--carbon-spacing-03); }
+    .summary-list { list-style: none; }
+    .summary-list li { padding: var(--carbon-spacing-03) 0; border-bottom: 1px solid var(--carbon-gray-20); display: flex; justify-content: space-between; }
+    .summary-list li:last-child { border-bottom: none; }
+    .summary-label { color: var(--carbon-gray-70); }
+    .summary-value { font-weight: 500; }
+
+    /* Loading */
+    .wizard-loading { text-align: center; padding: 3rem; display: none; }
+    .wizard-loading.active { display: block; }
+</style>
+
+<header class="page-header">
+    <div class="cds--grid">
+        <h1>School Setup Wizard</h1>
+        <a href="/dashboard/">&larr; Back to Dashboard</a>
+    </div>
+</header>
+
+<script>
+    // Set current year on page load
+    document.addEventListener('DOMContentLoaded', () => {
+        const year = new Date().getFullYear();
+        document.getElementById('academicYear').value = year;
+        document.getElementById('yearStart').value = `${year}-01-06`;
+        document.getElementById('yearEnd').value = `${year}-12-05`;
+        document.querySelectorAll('.term-start')[0].value = `${year}-01-06`;
+        document.querySelectorAll('.term-end')[0].value = `${year}-04-04`;
+        document.querySelectorAll('.term-start')[1].value = `${year}-05-05`;
+        document.querySelectorAll('.term-end')[1].value = `${year}-08-01`;
+        document.querySelectorAll('.term-start')[2].value = `${year}-09-01`;
+        document.querySelectorAll('.term-end')[2].value = `${year}-11-28`;
+
+        // Also update the wizard's internal data
+        if (typeof wizard !== 'undefined') {
+            wizard.data.year.name = String(year);
+            wizard.data.year.start = `${year}-01-06`;
+            wizard.data.year.end = `${year}-12-05`;
+            wizard.data.terms[0].start = `${year}-01-06`;
+            wizard.data.terms[0].end = `${year}-04-04`;
+            wizard.data.terms[1].start = `${year}-05-05`;
+            wizard.data.terms[1].end = `${year}-08-01`;
+            wizard.data.terms[2].start = `${year}-09-01`;
+            wizard.data.terms[2].end = `${year}-11-28`;
+        }
+    });
+</script>
+
+<div class="main-content">
+    <div class="cds--grid">
+        <div class="wizard-container">
+            <div class="wizard-header">
+                <h1>Configure Your School</h1>
+                <p>Follow these steps to set up your school's academic structure</p>
+            </div>
+
+            <!-- Progress Steps -->
+            <div class="wizard-progress">
+                <div class="wizard-step active" data-step="1">
+                    <div class="wizard-step-number">1</div>
+                    <span class="wizard-step-label">Academic Year</span>
+                </div>
+                <div class="wizard-step-connector"></div>
+                <div class="wizard-step" data-step="2">
+                    <div class="wizard-step-number">2</div>
+                    <span class="wizard-step-label">Terms</span>
+                </div>
+                <div class="wizard-step-connector"></div>
+                <div class="wizard-step" data-step="3">
+                    <div class="wizard-step-number">3</div>
+                    <span class="wizard-step-label">Sections</span>
+                </div>
+                <div class="wizard-step-connector"></div>
+                <div class="wizard-step" data-step="4">
+                    <div class="wizard-step-number">4</div>
+                    <span class="wizard-step-label">Classes</span>
+                </div>
+                <div class="wizard-step-connector"></div>
+                <div class="wizard-step" data-step="5">
+                    <div class="wizard-step-number">5</div>
+                    <span class="wizard-step-label">Subjects</span>
+                </div>
+                <div class="wizard-step-connector"></div>
+                <div class="wizard-step" data-step="6">
+                    <div class="wizard-step-number">6</div>
+                    <span class="wizard-step-label">Grade Scale</span>
+                </div>
+                <div class="wizard-step-connector"></div>
+                <div class="wizard-step" data-step="7">
+                    <div class="wizard-step-number">7</div>
+                    <span class="wizard-step-label">Review</span>
+                </div>
+            </div>
+
+            <!-- Alert Messages -->
+            <div class="alert alert--error" id="errorAlert">
+                <strong>Error!</strong> <span id="errorMessage"></span>
+            </div>
+            <div class="alert alert--success" id="successAlert">
+                <strong>Success!</strong> School setup completed successfully.
+            </div>
+
+            <!-- Step 1: Academic Year -->
+            <div class="wizard-step-content active" id="step1">
+                <div class="cds--tile">
+                    <h3 class="form-section-title">Academic Year</h3>
+                    <div class="form-group">
+                        <label class="form-label" for="academicYear">Year Name</label>
+                        <input type="text" id="academicYear" class="cds--text-input" placeholder="e.g., 2025">
+                    </div>
+                    <div class="form-row" style="margin-top: var(--carbon-spacing-05);">
+                        <div class="form-group">
+                            <label class="form-label" for="yearStart">Start Date</label>
+                            <input type="date" id="yearStart" class="cds--text-input">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="yearEnd">End Date</label>
+                            <input type="date" id="yearEnd" class="cds--text-input">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: Terms -->
+            <div class="wizard-step-content" id="step2">
+                <div class="cds--tile">
+                    <h3 class="form-section-title">Terms</h3>
+                    <p style="margin-bottom: var(--carbon-spacing-05); color: var(--carbon-gray-70);">Configure the terms for this academic year</p>
+
+                    <div class="term-row">
+                        <div class="form-group">
+                            <label class="form-label">Term Name</label>
+                            <input type="text" class="cds--text-input term-name" value="Term 1" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Start Date</label>
+                            <input type="date" class="cds--text-input term-start">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">End Date</label>
+                            <input type="date" class="cds--text-input term-end">
+                        </div>
+                    </div>
+
+                    <div class="term-row">
+                        <div class="form-group">
+                            <label class="form-label">Term Name</label>
+                            <input type="text" class="cds--text-input term-name" value="Term 2" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Start Date</label>
+                            <input type="date" class="cds--text-input term-start">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">End Date</label>
+                            <input type="date" class="cds--text-input term-end">
+                        </div>
+                    </div>
+
+                    <div class="term-row">
+                        <div class="form-group">
+                            <label class="form-label">Term Name</label>
+                            <input type="text" class="cds--text-input term-name" value="Term 3" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Start Date</label>
+                            <input type="date" class="cds--text-input term-start">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">End Date</label>
+                            <input type="date" class="cds--text-input term-end">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 3: Sections -->
+            <div class="wizard-step-content" id="step3">
+                <div class="cds--tile">
+                    <h3 class="form-section-title">School Sections</h3>
+                    <p style="margin-bottom: var(--carbon-spacing-05); color: var(--carbon-gray-70);">Select which sections your school has</p>
+                    <div class="checkbox-group" id="sectionsGroup">
+                        <label class="checkbox-item checked" data-section="pre-primary">
+                            <input type="checkbox" name="sections" value="pre-primary" checked> Pre-Primary
+                        </label>
+                        <label class="checkbox-item checked" data-section="primary">
+                            <input type="checkbox" name="sections" value="primary" checked> Primary
+                        </label>
+                        <label class="checkbox-item" data-section="secondary">
+                            <input type="checkbox" name="sections" value="secondary"> Secondary
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 4: Classes -->
+            <div class="wizard-step-content" id="step4">
+                <div class="cds--tile">
+                    <h3 class="form-section-title">Classes</h3>
+                    <p style="margin-bottom: var(--carbon-spacing-05); color: var(--carbon-gray-70);">Select classes for each section</p>
+
+                    <div id="classesContainer">
+                        <!-- Pre-Primary Classes -->
+                        <div class="form-section" id="pre-primary-classes">
+                            <h4 class="form-section-title">Pre-Primary</h4>
+                            <div class="checkbox-group">
+                                <label class="checkbox-item checked" data-class="baby"><input type="checkbox" name="pre-primary" value="Baby" checked> Baby</label>
+                                <label class="checkbox-item checked" data-class="middle"><input type="checkbox" name="pre-primary" value="Middle" checked> Middle</label>
+                                <label class="checkbox-item checked" data-class="top"><input type="checkbox" name="pre-primary" value="Top" checked> Top</label>
+                            </div>
+                        </div>
+
+                        <!-- Primary Classes -->
+                        <div class="form-section" id="primary-classes">
+                            <h4 class="form-section-title">Primary</h4>
+                            <div class="checkbox-group">
+                                <label class="checkbox-item checked" data-class="p1"><input type="checkbox" name="primary" value="P.1" checked> P.1</label>
+                                <label class="checkbox-item checked" data-class="p2"><input type="checkbox" name="primary" value="P.2" checked> P.2</label>
+                                <label class="checkbox-item checked" data-class="p3"><input type="checkbox" name="primary" value="P.3" checked> P.3</label>
+                                <label class="checkbox-item checked" data-class="p4"><input type="checkbox" name="primary" value="P.4" checked> P.4</label>
+                                <label class="checkbox-item checked" data-class="p5"><input type="checkbox" name="primary" value="P.5" checked> P.5</label>
+                                <label class="checkbox-item checked" data-class="p6"><input type="checkbox" name="primary" value="P.6" checked> P.6</label>
+                                <label class="checkbox-item checked" data-class="p7"><input type="checkbox" name="primary" value="P.7" checked> P.7</label>
+                            </div>
+                        </div>
+
+                        <!-- Secondary Classes -->
+                        <div class="form-section" id="secondary-classes" style="display: none;">
+                            <h4 class="form-section-title">Secondary</h4>
+                            <div class="checkbox-group">
+                                <label class="checkbox-item" data-class="s1"><input type="checkbox" name="secondary" value="S.1"> S.1</label>
+                                <label class="checkbox-item" data-class="s2"><input type="checkbox" name="secondary" value="S.2"> S.2</label>
+                                <label class="checkbox-item" data-class="s3"><input type="checkbox" name="secondary" value="S.3"> S.3</label>
+                                <label class="checkbox-item" data-class="s4"><input type="checkbox" name="secondary" value="S.4"> S.4</label>
+                                <label class="checkbox-item" data-class="s5"><input type="checkbox" name="secondary" value="S.5"> S.5</label>
+                                <label class="checkbox-item" data-class="s6"><input type="checkbox" name="secondary" value="S.6"> S.6</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 5: Subjects -->
+            <div class="wizard-step-content" id="step5">
+                <div class="cds--tile">
+                    <h3 class="form-section-title">Subjects</h3>
+                    <p style="margin-bottom: var(--carbon-spacing-05); color: var(--carbon-gray-70);">Select subjects for your curriculum</p>
+                    <div class="checkbox-group" id="subjectsGroup">
+                        <label class="checkbox-item checked" data-subject="english"><input type="checkbox" name="subjects" value="English" checked> English</label>
+                        <label class="checkbox-item checked" data-subject="math"><input type="checkbox" name="subjects" value="Mathematics" checked> Mathematics</label>
+                        <label class="checkbox-item checked" data-subject="science"><input type="checkbox" name="subjects" value="Science" checked> Science</label>
+                        <label class="checkbox-item checked" data-subject="social"><input type="checkbox" name="subjects" value="Social Studies" checked> Social Studies</label>
+                        <label class="checkbox-item checked" data-subject="re"><input type="checkbox" name="subjects" value="Religious Education" checked> Religious Education</label>
+                        <label class="checkbox-item checked" data-subject="local"><input type="checkbox" name="subjects" value="Local Language" checked> Local Language</label>
+                        <label class="checkbox-item" data-subject="art"><input type="checkbox" name="subjects" value="Art & Crafts"> Art & Crafts</label>
+                        <label class="checkbox-item" data-subject="pe"><input type="checkbox" name="subjects" value="Physical Education"> Physical Education</label>
+                        <label class="checkbox-item" data-subject="music"><input type="checkbox" name="subjects" value="Music"> Music</label>
+                        <label class="checkbox-item" data-subject="agriculture"><input type="checkbox" name="subjects" value="Agriculture"> Agriculture</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 6: Grade Scale -->
+            <div class="wizard-step-content" id="step6">
+                <div class="cds--tile">
+                    <h3 class="form-section-title">Uganda Grade Scale (D1 - F9)</h3>
+                    <p style="margin-bottom: var(--carbon-spacing-05); color: var(--carbon-gray-70);">Default grading scale for your school</p>
+
+                    <table class="cds--data-table">
+                        <thead>
+                            <tr>
+                                <th>Grade</th>
+                                <th>Min %</th>
+                                <th>Max %</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td><strong>D1</strong></td><td>80</td><td>100</td><td>Distinction</td></tr>
+                            <tr><td><strong>D2</strong></td><td>75</td><td>79</td><td>Distinction</td></tr>
+                            <tr><td><strong>C3</strong></td><td>70</td><td>74</td><td>Credit</td></tr>
+                            <tr><td><strong>C4</strong></td><td>65</td><td>69</td><td>Credit</td></tr>
+                            <tr><td><strong>C5</strong></td><td>60</td><td>64</td><td>Credit</td></tr>
+                            <tr><td><strong>C6</strong></td><td>55</td><td>59</td><td>Credit</td></tr>
+                            <tr><td><strong>P7</strong></td><td>50</td><td>54</td><td>Pass</td></tr>
+                            <tr><td><strong>P8</strong></td><td>45</td><td>49</td><td>Pass</td></tr>
+                            <tr><td><strong>F9</strong></td><td>0</td><td>44</td><td>Fail</td></tr>
+                        </tbody>
+                    </table>
+                    <p style="margin-top: var(--carbon-spacing-05); font-size: 0.875rem; color: var(--carbon-gray-70);">This is Uganda's standard grading scale. You can modify it later in the admin panel.</p>
+                </div>
+            </div>
+
+            <!-- Step 7: Review -->
+            <div class="wizard-step-content" id="step7">
+                <div class="cds--tile">
+                    <h3 class="form-section-title">Review & Submit</h3>
+                    <p style="margin-bottom: var(--carbon-spacing-06); color: var(--carbon-gray-70);">Review your setup before submitting</p>
+
+                    <div class="summary-section">
+                        <div class="summary-title">Academic Year</div>
+                        <ul class="summary-list" id="summaryYear">
+                            <li><span class="summary-label">Name</span><span class="summary-value" id="summaryYearName">--</span></li>
+                            <li><span class="summary-label">Duration</span><span class="summary-value" id="summaryYearDates">--</span></li>
+                        </ul>
+                    </div>
+
+                    <div class="summary-section">
+                        <div class="summary-title">Terms</div>
+                        <ul class="summary-list" id="summaryTerms">
+                            <li><span class="summary-label">Term 1</span><span class="summary-value" id="summaryTerm1">Jan 6 - Apr 4</span></li>
+                            <li><span class="summary-label">Term 2</span><span class="summary-value" id="summaryTerm2">May 5 - Aug 1</span></li>
+                            <li><span class="summary-label">Term 3</span><span class="summary-value" id="summaryTerm3">Sep 1 - Nov 28</span></li>
+                        </ul>
+                    </div>
+
+                    <div class="summary-section">
+                        <div class="summary-title">Sections & Classes</div>
+                        <ul class="summary-list" id="summarySections">
+                            <li><span class="summary-label">Pre-Primary</span><span class="summary-value" id="summaryPrePrimary">Baby, Middle, Top</span></li>
+                            <li><span class="summary-label">Primary</span><span class="summary-value" id="summaryPrimary">P.1 - P.7</span></li>
+                            <li><span class="summary-label secondary-summary" style="display:none;"><span class="summary-label">Secondary</span><span class="summary-value" id="summarySecondary"></span></span></li>
+                        </ul>
+                    </div>
+
+                    <div class="summary-section">
+                        <div class="summary-title">Subjects</div>
+                        <ul class="summary-list">
+                            <li><span class="summary-label">Total Subjects</span><span class="summary-value" id="summarySubjectsCount">6</span></li>
+                            <li><span class="summary-label">Subjects</span><span class="summary-value" id="summarySubjects">English, Mathematics, Science, Social Studies, Religious Education, Local Language</span></li>
+                        </ul>
+                    </div>
+
+                    <div class="summary-section">
+                        <div class="summary-title">Grade Scale</div>
+                        <ul class="summary-list">
+                            <li><span class="summary-label">Scale</span><span class="summary-value">D1 - F9 (Uganda Standard)</span></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading -->
+            <div class="wizard-loading" id="wizardLoading">
+                <div class="cds--loading">
+                    <svg class="cds--loading__svg" viewBox="0 0 100 100">
+                        <circle class="cds--loading__stroke" cx="50" cy="50" r="40"></circle>
+                    </svg>
+                </div>
+                <p style="margin-top: var(--carbon-spacing-05);">Setting up your school...</p>
+            </div>
+
+            <!-- Navigation -->
+            <div class="wizard-nav" id="wizardNav">
+                <button type="button" class="cds--btn cds--btn--secondary" id="prevBtn" onclick="wizard.prev()" disabled>Back</button>
+                <button type="button" class="cds--btn cds--btn--primary" id="nextBtn" onclick="wizard.next()">Next</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Global error handler
+window.onerror = function(msg, url, lineNo, columnNo, error) {
+    console.error('Error: ', msg, '\nURL: ', url, '\nLine: ', lineNo, '\nColumn: ', columnNo, '\nError object: ', error);
+    return false;
+};
+
+// Get current year dynamically
+const currentYear = new Date().getFullYear();
+const yearStart = `${currentYear}-01-06`;
+const yearEnd = `${currentYear}-12-05`;
+
+console.log('Wizard initialized with year:', currentYear);
+
+const wizard = {
+    currentStep: 1,
+    totalSteps: 7,
+    data: {
+        year: { name: String(currentYear), start: yearStart, end: yearEnd },
+        terms: [
+            { name: 'Term 1', start: yearStart, end: `${currentYear}-04-04` },
+            { name: 'Term 2', start: `${currentYear}-05-05`, end: `${currentYear}-08-01` },
+            { name: 'Term 3', start: `${currentYear}-09-01`, end: `${currentYear}-11-28` }
+        ],
+        sections: ['pre-primary', 'primary'],
+        classes: {
+            'pre-primary': ['Baby', 'Middle', 'Top'],
+            'primary': ['P.1', 'P.2', 'P.3', 'P.4', 'P.5', 'P.6', 'P.7'],
+            'secondary': []
+        },
+        subjects: ['English', 'Mathematics', 'Science', 'Social Studies', 'Religious Education', 'Local Language']
+    },
+
+    init() {
+        this.bindEvents();
+        this.updateUI();
+    },
+
+    bindEvents() {
+        // Toggle checkbox styling
+        document.querySelectorAll('.checkbox-item input').forEach(input => {
+            input.addEventListener('change', (e) => {
+                const item = e.target.closest('.checkbox-item');
+                if (e.target.checked) {
+                    item.classList.add('checked');
+                } else {
+                    item.classList.remove('checked');
+                }
+                this.collectData();
+            });
+        });
+
+        // Section toggle shows/hides classes
+        document.querySelectorAll('#sectionsGroup input').forEach(input => {
+            input.addEventListener('change', (e) => {
+                const section = e.target.value;
+                const classesSection = document.getElementById(`${section}-classes`);
+                if (classesSection) {
+                    classesSection.style.display = e.target.checked ? 'block' : 'none';
+                    if (!e.target.checked) {
+                        classesSection.querySelectorAll('input').forEach(cb => {
+                            cb.checked = false;
+                            cb.closest('.checkbox-item').classList.remove('checked');
+                        });
+                    } else {
+                        classesSection.querySelectorAll('input').forEach(cb => {
+                            cb.checked = true;
+                            cb.closest('.checkbox-item').classList.add('checked');
+                        });
+                    }
+                }
+                this.collectData();
+            });
+        });
+
+        // Collect data on input changes
+        document.getElementById('academicYear').addEventListener('change', (e) => {
+            this.data.year.name = e.target.value;
+        });
+        document.getElementById('yearStart').addEventListener('change', (e) => {
+            this.data.year.start = e.target.value;
+        });
+        document.getElementById('yearEnd').addEventListener('change', (e) => {
+            this.data.year.end = e.target.value;
+        });
+
+        document.querySelectorAll('.term-start').forEach((input, i) => {
+            input.addEventListener('change', (e) => { this.data.terms[i].start = e.target.value; });
+        });
+        document.querySelectorAll('.term-end').forEach((input, i) => {
+            input.addEventListener('change', (e) => { this.data.terms[i].end = e.target.value; });
+        });
+    },
+
+    collectData() {
+        // Sections
+        this.data.sections = [];
+        document.querySelectorAll('#sectionsGroup input:checked').forEach(input => {
+            this.data.sections.push(input.value);
+        });
+
+        // Classes
+        this.data.classes = { 'pre-primary': [], 'primary': [], 'secondary': [] };
+        this.data.sections.forEach(section => {
+            document.querySelectorAll(`#${section}-classes input:checked`).forEach(input => {
+                this.data.classes[section].push(input.value);
+            });
+        });
+
+        // Subjects
+        this.data.subjects = [];
+        document.querySelectorAll('#subjectsGroup input:checked').forEach(input => {
+            this.data.subjects.push(input.value);
+        });
+
+        if (this.currentStep === 7) {
+            this.updateSummary();
+        }
+    },
+
+    updateUI() {
+        // Update step indicators
+        document.querySelectorAll('.wizard-step').forEach((step, i) => {
+            const stepNum = i + 1;
+            step.classList.remove('active', 'completed');
+            if (stepNum < this.currentStep) {
+                step.classList.add('completed');
+            } else if (stepNum === this.currentStep) {
+                step.classList.add('active');
+            }
+        });
+
+        // Show/hide step content
+        document.querySelectorAll('.wizard-step-content').forEach((content, i) => {
+            content.classList.toggle('active', i + 1 === this.currentStep);
+        });
+
+        // Update buttons
+        document.getElementById('prevBtn').disabled = this.currentStep === 1;
+        document.getElementById('nextBtn').textContent = this.currentStep === this.totalSteps ? 'Submit' : 'Next';
+        document.getElementById('nextBtn').style.display = this.currentStep === this.totalSteps && this.data.submitted ? 'none' : 'inline-flex';
+    },
+
+    next() {
+        if (this.currentStep === this.totalSteps) {
+            this.submit();
+        } else {
+            this.collectData();
+            this.currentStep++;
+            this.updateUI();
+        }
+    },
+
+    prev() {
+        if (this.currentStep > 1) {
+            this.currentStep--;
+            this.updateUI();
+        }
+    },
+
+    updateSummary() {
+        // Year
+        document.getElementById('summaryYearName').textContent = this.data.year.name;
+        const startDate = new Date(this.data.year.start);
+        const endDate = new Date(this.data.year.end);
+        document.getElementById('summaryYearDates').textContent =
+            `${startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+
+        // Terms
+        this.data.terms.forEach((term, i) => {
+            const start = new Date(term.start);
+            const end = new Date(term.end);
+            document.getElementById(`summaryTerm${i + 1}`).textContent =
+                `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+        });
+
+        // Sections & Classes
+        document.getElementById('summaryPrePrimary').textContent =
+            this.data.classes['pre-primary'].length ? this.data.classes['pre-primary'].join(', ') : 'None';
+        document.getElementById('summaryPrimary').textContent =
+            this.data.classes['primary'].length ? this.data.classes['primary'].join(', ') : 'None';
+
+        const secondarySummary = document.querySelector('.secondary-summary');
+        if (this.data.classes['secondary'].length) {
+            secondarySummary.style.display = 'flex';
+            document.getElementById('summarySecondary').textContent = this.data.classes['secondary'].join(', ');
+        } else {
+            secondarySummary.style.display = 'none';
+        }
+
+        // Subjects
+        document.getElementById('summarySubjectsCount').textContent = this.data.subjects.length;
+        document.getElementById('summarySubjects').textContent = this.data.subjects.join(', ');
+    },
+
+    async submit() {
+        this.collectData();
+
+        console.log('Submitting data:', JSON.stringify(this.data, null, 2));
+
+        // Show loading
+        document.getElementById('wizardLoading').classList.add('active');
+        document.getElementById('wizardNav').style.display = 'none';
+        document.getElementById('errorAlert').style.display = 'none';
+
+        try {
+            const response = await api.post('/api/accounts/setup/', this.data);
+
+            if (response.ok) {
+                Toast.success('School setup completed successfully!');
+                setTimeout(() => {
+                    window.location.href = '/dashboard/';
+                }, 1500);
+            } else {
+                const error = await response.json();
+                throw new Error(error.detail || 'Setup failed');
+            }
+        } catch (e) {
+            document.getElementById('errorMessage').textContent = e.message;
+            document.getElementById('errorAlert').style.display = 'block';
+            document.getElementById('wizardLoading').classList.remove('active');
+            document.getElementById('wizardNav').style.display = 'flex';
+        }
+    }
+};
+
+// Initialize
+document.addEventListener('DOMContentLoaded', () => wizard.init());
+</script>
+{% endblock %}

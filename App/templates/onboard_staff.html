@@ -14,6 +14,7 @@
             --carbon-blue-70: #0043ce;
             --carbon-green-50: #24a148;
             --carbon-red-60: #da1e28;
+            --carbon-cyan-60: #1192e8;
             --carbon-gray-100: #f4f4f4;
             --carbon-gray-20: #e0e0e0;
             --carbon-gray-10: #f3f3f3;
@@ -69,6 +70,54 @@
             margin-bottom: var(--carbon-spacing-12);
         }
 
+        .form-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--carbon-spacing-11);
+            padding-bottom: var(--carbon-spacing-09);
+            border-bottom: 1px solid var(--carbon-gray-20);
+        }
+
+        .form-header h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: var(--carbon-spacing-06);
+        }
+
+        .form-header h2 svg {
+            width: 24px;
+            height: 24px;
+            color: var(--carbon-cyan-60);
+        }
+
+        .help-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--carbon-spacing-06);
+            padding: var(--carbon-spacing-06) var(--carbon-spacing-09);
+            background: transparent;
+            border: 1px solid var(--carbon-blue-60);
+            color: var(--carbon-blue-60);
+            font-family: var(--carbon-font-family);
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 70ms cubic-bezier(0.2, 0, 0.38, 0.9);
+        }
+
+        .help-btn:hover {
+            background: var(--carbon-blue-60);
+            color: var(--carbon-white);
+        }
+
+        .help-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
         .form-section {
             margin-bottom: var(--carbon-spacing-11);
             padding-bottom: var(--carbon-spacing-11);
@@ -82,9 +131,24 @@
         }
 
         .section-title {
-            font-size: 1.25rem;
+            font-size: 1.125rem;
             font-weight: 600;
             color: var(--carbon-gray-70);
+            margin-bottom: var(--carbon-spacing-09);
+            display: flex;
+            align-items: center;
+            gap: var(--carbon-spacing-06);
+        }
+
+        .section-title svg {
+            width: 20px;
+            height: 20px;
+            color: var(--carbon-cyan-60);
+        }
+
+        .section-desc {
+            font-size: 0.875rem;
+            color: var(--carbon-gray-50);
             margin-bottom: var(--carbon-spacing-09);
         }
 
@@ -100,11 +164,80 @@
             flex-direction: column;
         }
 
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .form-label-wrapper {
+            display: flex;
+            align-items: center;
+            gap: var(--carbon-spacing-06);
+            margin-bottom: var(--carbon-spacing-06);
+        }
+
         label {
             font-size: 0.75rem;
             font-weight: 400;
             color: var(--carbon-gray-70);
-            margin-bottom: var(--carbon-spacing-06);
+        }
+
+        .tooltip-trigger {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--carbon-gray-20);
+            color: var(--carbon-gray-70);
+            cursor: help;
+            font-size: 0.625rem;
+            font-weight: bold;
+            position: relative;
+        }
+
+        .tooltip-trigger:hover .tooltip-content,
+        .tooltip-trigger:focus .tooltip-content {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .tooltip-content {
+            position: absolute;
+            bottom: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%) translateY(-4px);
+            background: var(--carbon-black);
+            color: var(--carbon-white);
+            padding: var(--carbon-spacing-07) var(--carbon-spacing-09);
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 400;
+            white-space: nowrap;
+            z-index: 100;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 110ms cubic-bezier(0.2, 0, 0.38, 0.9);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            line-height: 1.4;
+        }
+
+        .tooltip-content::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 4px solid transparent;
+            border-top-color: var(--carbon-black);
+        }
+
+        .form-hint {
+            font-size: 0.75rem;
+            color: var(--carbon-gray-50);
+            margin-top: var(--carbon-spacing-05);
+            font-style: italic;
         }
 
         input, select {
@@ -122,6 +255,28 @@
         input:focus, select:focus {
             outline: none;
             border-bottom: 2px solid var(--carbon-blue-60);
+        }
+
+        input::placeholder {
+            color: var(--carbon-gray-50);
+        }
+
+        .cds--select {
+            position: relative;
+        }
+
+        .cds--select-input {
+            appearance: none;
+            padding-right: 2.5rem;
+        }
+
+        .cds--select__arrow {
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+            fill: var(--carbon-gray-70);
         }
 
         .cds--btn {
@@ -165,6 +320,10 @@
             color: var(--carbon-blue-60);
             text-decoration: none;
             font-size: 0.875rem;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
         }
 
         .alert {
@@ -283,6 +442,78 @@
         .staff-item:last-child {
             border-bottom: none;
         }
+
+        /* Modal styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(22, 22, 22, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 240ms cubic-bezier(0.4, 0.14, 0.3, 1);
+        }
+
+        .modal-overlay.active { opacity: 1; visibility: visible; }
+
+        .modal {
+            background: #ffffff;
+            max-width: 600px;
+            width: 90%;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .modal-title { font-size: 1.25rem; font-weight: 600; margin: 0; }
+
+        .modal-close {
+            background: none;
+            border: none;
+            padding: 0.5rem;
+            cursor: pointer;
+            color: #525252;
+        }
+
+        .modal-close:hover { color: #161616; }
+
+        .modal-body { padding: 1.5rem; }
+
+        .modal-body p { margin: 0 0 1rem; line-height: 1.6; color: #525252; }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            padding: 1rem 1.5rem;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .modal-btn {
+            padding: calc(0.875rem - 3px) calc(16px - 3px);
+            min-height: 3rem;
+            border: 0;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.875rem;
+        }
+
+        .modal-btn--primary { background: #0f62fe; color: #ffffff; }
+
+        .modal-btn--primary:hover { background: #0043ce; }
+
+        body.modal-open { overflow: hidden; }
     </style>
 </head>
 <body>
@@ -295,10 +526,26 @@
 
     <main class="cds--grid">
         <div class="form-container">
+            <div class="form-header">
+                <h2>
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                    Add Staff Member
+                </h2>
+                <button type="button" class="help-btn" onclick="Modal.open('helpModal')">
+                    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 10.5a1.5 1.5 0 110-3 1.5 1.5 0 010 3z"/><path d="M7.25 7h1.5v2h-1.5V7zm1.5-3.25h-2v.75h1.5v.5h-.75v.5h1v.75h.75V7.5h-1.5V3.75z"/></svg>
+                    Need Help?
+                </button>
+            </div>
+
             <!-- JWT Token Section -->
             <div class="token-section">
                 <div class="form-group">
-                    <label for="jwt_token">Your JWT Token *</label>
+                    <div class="form-label-wrapper">
+                        <label for="jwt_token">Your JWT Token *</label>
+                        <span class="tooltip-trigger" tabindex="0">?
+                            <span class="tooltip-content">Authentication token from your school owner login</span>
+                        </span>
+                    </div>
                     <input type="password" id="jwt_token" class="token-input" placeholder="Paste your JWT access token here" required>
                     <p class="help-text">Get your token from POST /api/accounts/token/ with your school owner credentials</p>
                 </div>
@@ -314,76 +561,151 @@
 
             <form id="staff-form">
                 <div class="form-section">
-                    <h2 class="section-title">Account Information</h2>
+                    <h3 class="section-title">
+                        <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a8 8 0 00-8 8v2a3 3 0 013-3h10a3 3 0 013 3v2a8 8 0 00-8-8zm0 16a6 6 0 110-12 6 6 0 010 12z"/><path d="M10 6a1 1 0 011 1v4h2a1 1 0 010 2h-2v1a1 1 0 01-2 0v-4H7a1 1 0 010-2h2V7a1 1 0 011-1z"/></svg>
+                        Account Information
+                    </h3>
+                    <p class="section-desc">Login credentials for the staff member.</p>
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="email">Email Address *</label>
+                            <div class="form-label-wrapper">
+                                <label for="email">Email Address *</label>
+                                <span class="tooltip-trigger" tabindex="0">?
+                                    <span class="tooltip-content">Staff member's email for login and notifications</span>
+                                </span>
+                            </div>
                             <input type="email" id="email" name="email" placeholder="staff@school.edu" required>
                         </div>
                         <div class="form-group">
-                            <label for="password">Account Password * (min 8 chars)</label>
+                            <div class="form-label-wrapper">
+                                <label for="password">Account Password *</label>
+                                <span class="tooltip-trigger" tabindex="0">?
+                                    <span class="tooltip-content">Minimum 8 characters</span>
+                                </span>
+                            </div>
                             <input type="password" id="password" name="password" minlength="8" required>
+                            <p class="form-hint">Minimum 8 characters</p>
                         </div>
                     </div>
                 </div>
 
                 <div class="form-section">
-                    <h2 class="section-title">Personal Information</h2>
+                    <h3 class="section-title">
+                        <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"/></svg>
+                        Personal Information
+                    </h3>
+                    <p class="section-desc">Staff member's personal details.</p>
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="first_name">First Name *</label>
+                            <div class="form-label-wrapper">
+                                <label for="first_name">First Name *</label>
+                                <span class="tooltip-trigger" tabindex="0">?
+                                    <span class="tooltip-content">Staff member's given name</span>
+                                </span>
+                            </div>
                             <input type="text" id="first_name" name="first_name" placeholder="First name" required>
                         </div>
                         <div class="form-group">
-                            <label for="last_name">Last Name *</label>
+                            <div class="form-label-wrapper">
+                                <label for="last_name">Last Name *</label>
+                                <span class="tooltip-trigger" tabindex="0">?
+                                    <span class="tooltip-content">Staff member's family name</span>
+                                </span>
+                            </div>
                             <input type="text" id="last_name" name="last_name" placeholder="Last name" required>
                         </div>
                         <div class="form-group">
-                            <label for="phone">Phone Number *</label>
+                            <div class="form-label-wrapper">
+                                <label for="phone">Phone Number *</label>
+                                <span class="tooltip-trigger" tabindex="0">?
+                                    <span class="tooltip-content">Include country code (+256). Used for SMS alerts.</span>
+                                </span>
+                            </div>
                             <input type="tel" id="phone" name="phone" placeholder="+256..." required>
                         </div>
                     </div>
                 </div>
 
                 <div class="form-section">
-                    <h2 class="section-title">Employment Details</h2>
+                    <h3 class="section-title">
+                        <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10.75 2.75a.75.75 0 00-1.5 0v8.614L6.295 8.235a.75.75 0 10-1.09 1.03l4.25 4.5a.75.75 0 001.09 0l4.25-4.5a.75.75 0 00-1.09-1.03l-2.955 3.129V2.75z"/><path d="M3.5 12.75a.75.75 0 00-1.5 0v2.5A2.75 2.75 0 004.75 18h10.5A2.75 2.75 0 0018 15.25v-2.5a.75.75 0 00-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5z"/></svg>
+                        Employment Details
+                    </h3>
+                    <p class="section-desc">Official employment information.</p>
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="staff_number">Staff Number *</label>
+                            <div class="form-label-wrapper">
+                                <label for="staff_number">Staff Number *</label>
+                                <span class="tooltip-trigger" tabindex="0">?
+                                    <span class="tooltip-content">Unique identifier (e.g., STF-001)</span>
+                                </span>
+                            </div>
                             <input type="text" id="staff_number" name="staff_number" placeholder="STF-001" required>
                         </div>
                         <div class="form-group">
-                            <label for="gender">Gender *</label>
-                            <select id="gender" name="gender" required>
-                                <option value="">Select gender</option>
-                                <option value="M">Male</option>
-                                <option value="F">Female</option>
-                            </select>
+                            <div class="form-label-wrapper">
+                                <label for="gender">Gender *</label>
+                                <span class="tooltip-trigger" tabindex="0">?
+                                    <span class="tooltip-content">Staff member's gender</span>
+                                </span>
+                            </div>
+                            <div class="cds--select">
+                                <select id="gender" name="gender" class="cds--select-input" required>
+                                    <option value="">Select gender</option>
+                                    <option value="M">Male</option>
+                                    <option value="F">Female</option>
+                                </select>
+                                <svg class="cds--select__arrow" viewBox="0 0 16 16" width="16" height="16"><path d="M8 11L3 6h10l-5 5z"/></svg>
+                            </div>
                         </div>
                         <div class="form-group">
-                            <label for="date_of_birth">Date of Birth *</label>
+                            <div class="form-label-wrapper">
+                                <label for="date_of_birth">Date of Birth *</label>
+                                <span class="tooltip-trigger" tabindex="0">?
+                                    <span class="tooltip-content">Staff member's date of birth</span>
+                                </span>
+                            </div>
                             <input type="date" id="date_of_birth" name="date_of_birth" required>
                         </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="department">Department *</label>
+                            <div class="form-label-wrapper">
+                                <label for="department">Department *</label>
+                                <span class="tooltip-trigger" tabindex="0">?
+                                    <span class="tooltip-content">e.g., Academic, Administration, Finance</span>
+                                </span>
+                            </div>
                             <input type="text" id="department" name="department" placeholder="e.g., Academic, Administration" required>
                         </div>
                         <div class="form-group">
-                            <label for="position">Position *</label>
+                            <div class="form-label-wrapper">
+                                <label for="position">Position *</label>
+                                <span class="tooltip-trigger" tabindex="0">?
+                                    <span class="tooltip-content">e.g., Teacher, Head of Dept, Secretary</span>
+                                </span>
+                            </div>
                             <input type="text" id="position" name="position" placeholder="e.g., Teacher, Head of Dept" required>
                         </div>
                     </div>
                 </div>
 
                 <div class="form-section">
-                    <h2 class="section-title">Roles</h2>
+                    <h3 class="section-title">
+                        <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a8 8 0 00-8 8v2a3 3 0 013-3h10a3 3 0 013 3v2a8 8 0 00-8-8z"/><path d="M6 10a4 4 0 018 0"/></svg>
+                        Roles & Permissions
+                    </h3>
+                    <p class="section-desc">Assign system roles to control what the staff member can access.</p>
                     <div class="form-row">
                         <div class="form-group full-width">
-                            <label for="role_codes">Assign Roles (comma-separated codes)</label>
+                            <div class="form-label-wrapper">
+                                <label for="role_codes">Assign Roles (comma-separated)</label>
+                                <span class="tooltip-trigger" tabindex="0">?
+                                    <span class="tooltip-content">Permission codes like academic.view_results. Leave empty for no roles.</span>
+                                </span>
+                            </div>
                             <input type="text" id="role_codes" name="role_codes" placeholder="e.g., academic.view_results, academic.enter_marks">
-                            <p class="help-text">Leave empty to assign no roles. Common roles: academic.view_results, academic.enter_marks, academic.approve_results, finance.view_invoices</p>
+                            <p class="form-hint">Common roles: academic.view_results, academic.enter_marks, academic.approve_results, finance.view_invoices</p>
                         </div>
                     </div>
                 </div>
@@ -397,8 +719,82 @@
     </main>
 
     <footer class="page-footer">
-        <p>Friends of Children School Management System &copy; 2025</p>
+        <p>Friends of Children School Management System &copy; 2026</p>
     </footer>
+
+    <!-- Help Modal -->
+    <div class="modal-overlay" id="helpModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Staff Onboarding Help</h3>
+                <button class="modal-close" onclick="Modal.close('helpModal')">
+                    <svg viewBox="0 0 16 16"><path d="M12 4.7L11.3 4 8 7.3 4.7 4 4 4.7 7.3 8 4 11.3l.7.7L8 8.7l3.3 3.3.7-.7L8.7 8 12 4.7z"/></svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p><strong>How to Add a Staff Member:</strong></p>
+                <ol style="padding-left: 1.25rem; color: var(--carbon-gray-70); line-height: 1.8;">
+                    <li>Enter your <strong>JWT token</strong> for authentication</li>
+                    <li>Fill in <strong>account information</strong> (email and password for login)</li>
+                    <li>Provide <strong>personal information</strong> about the staff member</li>
+                    <li>Enter <strong>employment details</strong> (staff number, department, position)</li>
+                    <li>Assign <strong>roles</strong> for system access permissions</li>
+                    <li>Click <strong>Add Staff Member</strong> to save</li>
+                </ol>
+
+                <p style="margin-top: 1rem;"><strong>Field Explanations:</strong></p>
+                <ul style="padding-left: 1.25rem; color: var(--carbon-gray-70); line-height: 1.8;">
+                    <li><strong>Staff Number</strong> - Unique identifier for payroll and records</li>
+                    <li><strong>Department</strong> - Academic, Administration, Finance, etc.</li>
+                    <li><strong>Position</strong> - Teacher, Head of Department, Secretary, etc.</li>
+                    <li><strong>Roles</strong> - Control what the staff member can access in the system</li>
+                </ul>
+
+                <p style="margin-top: 1rem;"><strong>Common Role Codes:</strong></p>
+                <ul style="padding-left: 1.25rem; color: var(--carbon-gray-70); line-height: 1.8;">
+                    <li><strong>academic.view_results</strong> - View student results</li>
+                    <li><strong>academic.enter_marks</strong> - Enter exam marks</li>
+                    <li><strong>academic.approve_results</strong> - Approve results for publication</li>
+                    <li><strong>finance.view_invoices</strong> - View fee invoices</li>
+                    <li><strong>students.view</strong> - View student information</li>
+                </ul>
+
+                <p style="margin-top: 1rem;"><strong>After Adding:</strong></p>
+                <p style="color: var(--carbon-gray-70);">The staff member will receive login credentials and can access the system based on their assigned roles.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn modal-btn--primary" onclick="Modal.close('helpModal')">Got it</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const Modal = {
+            open: function(modalId) {
+                const modal = document.getElementById(modalId);
+                if (modal) {
+                    modal.classList.add('active');
+                    document.body.classList.add('modal-open');
+                }
+            },
+            close: function(modalId) {
+                const modal = document.getElementById(modalId);
+                if (modal) {
+                    modal.classList.remove('active');
+                    document.body.classList.remove('modal-open');
+                }
+            }
+        };
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('modal-overlay')) Modal.close(e.target.id);
+        });
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                const active = document.querySelector('.modal-overlay.active');
+                if (active) Modal.close(active.id);
+            }
+        });
+    </script>
 
     <div class="loading-overlay" id="loading-overlay">
         <div class="cds--loading">

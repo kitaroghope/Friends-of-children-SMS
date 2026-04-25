@@ -1,0 +1,278 @@
+{% extends 'base.html' %}
+
+{% block title %}Add Student - Friends of Children SMS{% endblock %}
+
+{% block body %}
+<style>
+    .form-section { margin-bottom: var(--carbon-spacing-06); }
+    .form-section h3 { margin-bottom: var(--carbon-spacing-04); padding-bottom: var(--carbon-spacing-03); border-bottom: 1px solid var(--carbon-gray-20); }
+    .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--carbon-spacing-04); }
+    .form-actions { display: flex; gap: var(--carbon-spacing-04); margin-top: var(--carbon-spacing-06); padding-top: var(--carbon-spacing-05); border-top: 1px solid var(--carbon-gray-20); }
+    .error-message { background: rgba(218, 30, 40, 0.1); border-left: 3px solid var(--carbon-red-60); color: var(--carbon-red-60); padding: var(--carbon-spacing-04); margin-bottom: var(--carbon-spacing-05); display: none; }
+    .success-message { background: rgba(36, 161, 72, 0.1); border-left: 3px solid var(--carbon-green-60); color: var(--carbon-green-60); padding: var(--carbon-spacing-04); margin-bottom: var(--carbon-spacing-05); display: none; }
+</style>
+
+<div class="main-content">
+    <div class="cds--grid">
+        <!-- Breadcrumb -->
+        <div class="breadcrumb" id="studentBreadcrumb">
+            <a href="/dashboard/">Home</a>
+            <span class="breadcrumb-separator">/</span>
+            <a href="/students/">Students</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-current">Add Student</span>
+        </div>
+
+        <div id="errorMessage" class="error-message"></div>
+        <div id="successMessage" class="success-message"></div>
+
+        <form id="studentForm">
+            {% csrf_token %}
+
+            <!-- Personal Information -->
+            <div class="form-section cds--tile">
+                <h3>Personal Information</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="first_name">First Name *</label>
+                        <input type="text" id="first_name" name="first_name" class="cds--text-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="last_name">Last Name *</label>
+                        <input type="text" id="last_name" name="last_name" class="cds--text-input" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="gender">Gender *</label>
+                        <div class="cds--select">
+                            <select id="gender" name="gender" class="cds--select-input" required>
+                                <option value="">Select...</option>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                            </select>
+                            <svg class="cds--select__arrow" viewBox="0 0 16 16" width="16" height="16"><path d="M8 11L3 6h10l-5 5z"/></svg>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="date_of_birth">Date of Birth</label>
+                        <input type="date" id="date_of_birth" name="date_of_birth" class="cds--text-input">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="email">Email</label>
+                        <input type="email" id="email" name="email" class="cds--text-input">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="phone">Phone</label>
+                        <input type="text" id="phone" name="phone" class="cds--text-input" placeholder="e.g., 2567XXXXXXXX">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admission Details -->
+            <div class="form-section cds--tile">
+                <h3>Admission Details</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="admission_number">Admission Number</label>
+                        <input type="text" id="admission_number" name="admission_number" class="cds--text-input" placeholder="Auto-generated if empty">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="admission_date">Admission Date *</label>
+                        <input type="date" id="admission_date" name="admission_date" class="cds--text-input" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="section">Section *</label>
+                        <div class="cds--select">
+                            <select id="section" name="section" class="cds--select-input" required onchange="loadClasses()">
+                                <option value="">Select Section...</option>
+                            </select>
+                            <svg class="cds--select__arrow" viewBox="0 0 16 16" width="16" height="16"><path d="M8 11L3 6h10l-5 5z"/></svg>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="class_assign">Class *</label>
+                        <div class="cds--select">
+                            <select id="class_assign" name="class_assign" class="cds--select-input" required>
+                                <option value="">Select Class...</option>
+                            </select>
+                            <svg class="cds--select__arrow" viewBox="0 0 16 16" width="16" height="16"><path d="M8 11L3 6h10l-5 5z"/></svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Address -->
+            <div class="form-section cds--tile">
+                <h3>Address</h3>
+                <div class="form-row">
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                        <label class="form-label" for="address">Address</label>
+                        <textarea id="address" name="address" class="cds--text-input" rows="2"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Parent/Guardian -->
+            <div class="form-section cds--tile">
+                <h3>Parent/Guardian Information</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="parent_name">Parent/Guardian Name</label>
+                        <input type="text" id="parent_name" name="parent_name" class="cds--text-input" placeholder="Search or enter name">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="parent_phone">Phone</label>
+                        <input type="text" id="parent_phone" name="parent_phone" class="cds--text-input" placeholder="e.g., 2567XXXXXXXX">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="parent_email">Email</label>
+                        <input type="email" id="parent_email" name="parent_email" class="cds--text-input">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="relationship">Relationship</label>
+                        <div class="cds--select">
+                            <select id="relationship" name="relationship" class="cds--select-input">
+                                <option value="">Select...</option>
+                                <option value="mother">Mother</option>
+                                <option value="father">Father</option>
+                                <option value="guardian">Guardian</option>
+                                <option value="other">Other</option>
+                            </select>
+                            <svg class="cds--select__arrow" viewBox="0 0 16 16" width="16" height="16"><path d="M8 11L3 6h10l-5 5z"/></svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Additional Info -->
+            <div class="form-section cds--tile">
+                <h3>Additional Information</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="medical_notes">Medical Notes</label>
+                        <textarea id="medical_notes" name="medical_notes" class="cds--text-input" rows="2" placeholder="Any allergies or medical conditions..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="notes">Other Notes</label>
+                        <textarea id="notes" name="notes" class="cds--text-input" rows="2" placeholder="Any other information..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="form-actions">
+                <a href="/students/" class="cds--btn cds--btn--secondary">Cancel</a>
+                <button type="submit" class="cds--btn cds--btn--primary" id="submitBtn">
+                    <span id="submitText">Add Student</span>
+                    <span id="submitLoading" style="display: none;">
+                        <span class="cds--loading__svg" style="width:16px;height:16px;margin:0"><circle class="cds--loading__stroke" cx="8" cy="8" r="6"/></span> Saving...
+                    </span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Set default admission date to today
+    document.addEventListener('DOMContentLoaded', () => {
+        Breadcrumb.render('studentBreadcrumb');
+        document.getElementById('admission_date').value = new Date().toISOString().split('T')[0];
+        loadSections();
+    });
+
+    async function loadSections() {
+        try {
+            const res = await api.get('/api/academic/sections/');
+            if (res.ok) {
+                const data = await res.json();
+                const select = document.getElementById('section');
+                data.results.forEach(section => {
+                    const option = document.createElement('option');
+                    option.value = section.id;
+                    option.textContent = section.name;
+                    select.appendChild(option);
+                });
+            }
+        } catch (e) {
+            console.log('Could not load sections');
+        }
+    }
+
+    async function loadClasses() {
+        const sectionId = document.getElementById('section').value;
+        const classSelect = document.getElementById('class_assign');
+        classSelect.innerHTML = '<option value="">Select Class...</option>';
+
+        if (!sectionId) return;
+
+        try {
+            const res = await api.get(`/api/academic/classes/?section=${sectionId}`);
+            if (res.ok) {
+                const data = await res.json();
+                data.results.forEach(cls => {
+                    const option = document.createElement('option');
+                    option.value = cls.id;
+                    option.textContent = cls.name;
+                    classSelect.appendChild(option);
+                });
+            }
+        } catch (e) {
+            console.log('Could not load classes');
+        }
+    }
+
+    document.getElementById('studentForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const formData = new FormData(e.target);
+        const data = Object.fromEntries(formData.entries());
+
+        // Show loading state
+        document.getElementById('submitText').style.display = 'none';
+        document.getElementById('submitLoading').style.display = 'inline-flex';
+        document.getElementById('submitBtn').disabled = true;
+        document.getElementById('errorMessage').style.display = 'none';
+
+        try {
+            const res = await api.post('/api/students/students/', data);
+
+            if (res.ok) {
+                const student = await res.json();
+                document.getElementById('successMessage').textContent = `Student "${student.first_name} ${student.last_name}" added successfully!`;
+                document.getElementById('successMessage').style.display = 'block';
+
+                // Scroll to top
+                window.scrollTo(0, 0);
+
+                // Reset form
+                e.target.reset();
+                document.getElementById('admission_date').value = new Date().toISOString().split('T')[0];
+
+                // Optionally redirect after delay
+                setTimeout(() => {
+                    window.location.href = '/students/';
+                }, 1500);
+            } else {
+                const error = await res.json();
+                throw new Error(error.detail || Object.values(error).flat().join(', ') || 'Failed to add student');
+            }
+        } catch (e) {
+            document.getElementById('errorMessage').textContent = e.message;
+            document.getElementById('errorMessage').style.display = 'block';
+            window.scrollTo(0, 0);
+        } finally {
+            document.getElementById('submitText').style.display = 'inline';
+            document.getElementById('submitLoading').style.display = 'none';
+            document.getElementById('submitBtn').disabled = false;
+        }
+    });
+</script>
+{% endblock %}

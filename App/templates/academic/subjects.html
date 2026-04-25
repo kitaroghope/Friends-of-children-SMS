@@ -1,0 +1,401 @@
+{% extends 'base.html' %}
+
+{% block title %}Subjects - Friends of Children SMS{% endblock %}
+
+{% block body %}
+<style>
+    .page-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--carbon-spacing-05); }
+    .page-title h1 { margin: 0; }
+    .filters-bar { display: flex; gap: var(--carbon-spacing-04); flex-wrap: wrap; margin-bottom: var(--carbon-spacing-05); }
+    .filters-bar .cds--select { min-width: 150px; }
+    .filters-bar .cds--text-input { min-width: 200px; }
+    .action-cell { display: flex; gap: var(--carbon-spacing-03); }
+    .empty-state { text-align: center; padding: 4rem 2rem; color: var(--carbon-gray-70); }
+    .empty-state svg { width: 64px; height: 64px; margin-bottom: var(--carbon-spacing-04); }
+    .status-badge { display: inline-flex; align-items: center; padding: 0.25rem 0.75rem; border-radius: 1rem; font-size: 0.75rem; font-weight: 500; }
+    .status-active { background: rgba(36, 161, 72, 0.1); color: var(--carbon-green-60); }
+    .status-inactive { background: rgba(218, 30, 40, 0.1); color: var(--carbon-red-60); }
+    .status-compulsory { background: rgba(15, 98, 254, 0.1); color: var(--carbon-blue-60); }
+    .subject-card { background: var(--carbon-white); border: 1px solid var(--carbon-gray-20); border-radius: 4px; padding: var(--carbon-spacing-04); transition: all 240ms; }
+    .subject-card:hover { border-color: var(--carbon-blue-60); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+    .subject-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: var(--carbon-spacing-03); }
+    .subject-name { font-size: 1.125rem; font-weight: 600; margin: 0; }
+    .subject-code { font-size: 0.875rem; color: var(--carbon-gray-50); background: var(--carbon-gray-10); padding: 0.125rem 0.5rem; border-radius: 4px; }
+    .subject-stats { display: flex; gap: var(--carbon-spacing-04); margin-top: var(--carbon-spacing-03); padding-top: var(--carbon-spacing-03); border-top: 1px solid var(--carbon-gray-20); }
+    .subject-stat { text-align: center; }
+    .subject-stat-value { font-size: 1.25rem; font-weight: 600; }
+    .subject-stat-label { font-size: 0.75rem; color: var(--carbon-gray-70); }
+    .grid-view { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--carbon-spacing-04); }
+    .list-view { display: none; }
+    .list-view.active { display: table; }
+    .grid-view.active { display: grid; }
+    .view-toggle { display: flex; gap: var(--carbon-spacing-02); }
+    .view-toggle button { padding: var(--carbon-spacing-02) var(--carbon-spacing-03); }
+    .view-toggle button.active { background: var(--carbon-blue-60); color: white; }
+
+    /* Modal Styles */
+    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: flex-start; z-index: 9000; overflow-y: auto; padding: var(--carbon-spacing-05); }
+    .modal-overlay.active { display: flex; }
+    .modal { background: var(--carbon-white); width: 100%; max-width: 500px; max-height: calc(100vh - 2rem); overflow-y: auto; border-radius: 4px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; padding: var(--carbon-spacing-05); border-bottom: 1px solid var(--carbon-gray-20); }
+    .modal-header h2 { margin: 0; font-size: 1.25rem; }
+    .modal-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; padding: 0; line-height: 1; color: var(--carbon-gray-70); }
+    .modal-body { padding: var(--carbon-spacing-05); }
+    .modal-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--carbon-spacing-04); margin-bottom: var(--carbon-spacing-04); }
+    .modal-form-group { margin-bottom: var(--carbon-spacing-04); }
+    .modal-form-group label { display: block; margin-bottom: var(--carbon-spacing-02); font-weight: 500; font-size: 0.875rem; }
+    .modal-form-actions { display: flex; gap: var(--carbon-spacing-04); justify-content: flex-end; padding-top: var(--carbon-spacing-05); border-top: 1px solid var(--carbon-gray-20); margin-top: var(--carbon-spacing-05); }
+    .full-width { grid-column: 1 / -1; }
+</style>
+
+<header class="page-header">
+    <div class="cds--grid">
+        <h1>Subjects</h1>
+        <a href="/dashboard/">&larr; Back to Dashboard</a>
+    </div>
+</header>
+
+<div class="main-content">
+    <div class="cds--grid">
+        <!-- Breadcrumb -->
+        <div class="breadcrumb" id="subjectsBreadcrumb">
+            <a href="/dashboard/">Home</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-current">Subjects</span>
+        </div>
+
+        <!-- Page Title & Actions -->
+        <div class="page-title">
+            <h1>All Subjects</h1>
+            <div style="display: flex; gap: var(--carbon-spacing-04); align-items: center;">
+                <div class="view-toggle">
+                    <button class="cds--btn cds--btn--ghost cds--btn--sm active" onclick="setView('grid')" id="gridViewBtn">Grid</button>
+                    <button class="cds--btn cds--btn--ghost cds--btn--sm" onclick="setView('list')" id="listViewBtn">List</button>
+                </div>
+                <button class="cds--btn cds--btn--primary" onclick="openAddSubjectModal()">Add Subject</button>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filters-bar">
+            <div class="cds--form-item">
+                <input type="text" id="searchInput" class="cds--text-input" placeholder="Search by name or code..." onkeyup="debounceSearch(event)">
+            </div>
+            <button class="cds--btn cds--btn--secondary" onclick="loadSubjects()">Search</button>
+        </div>
+
+        <!-- Results Info -->
+        <div id="resultsInfo" style="margin-bottom: var(--carbon-spacing-04); color: var(--carbon-gray-70); font-size: 0.875rem;"></div>
+
+        <!-- Subjects Grid View -->
+        <div id="gridView" class="grid-view active">
+            <!-- Dynamic content -->
+        </div>
+
+        <!-- Subjects List View -->
+        <div id="listView" class="cds--tile list-view">
+            <table class="cds--data-table" id="subjectTable">
+                <thead>
+                    <tr>
+                        <th>Code</th>
+                        <th>Subject Name</th>
+                        <th>Type</th>
+                        <th>Classes</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="subjectTableBody">
+                    <!-- Dynamic content -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="empty-state" style="display: none;">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72L12 15l5-2.73v3.72z"/></svg>
+            <h3>No Subjects Found</h3>
+            <p>No subjects match your search criteria. Add a subject to get started.</p>
+            <button class="cds--btn cds--btn--primary" style="margin-top: var(--carbon-spacing-04);" onclick="openAddSubjectModal()">Add Subject</button>
+        </div>
+
+        <!-- Loading -->
+        <div id="loadingState" class="empty-state">
+            <div class="cds--loading">
+                <svg class="cds--loading__svg" viewBox="0 0 100 100">
+                    <circle class="cds--loading__stroke" cx="50" cy="50" r="40"></circle>
+                </svg>
+            </div>
+            <p style="margin-top: var(--carbon-spacing-04);">Loading subjects...</p>
+        </div>
+
+        <!-- Pagination -->
+        <div id="pagination" style="display: none; margin-top: var(--carbon-spacing-05); display: flex; justify-content: space-between; align-items: center;">
+            <div id="paginationInfo" style="color: var(--carbon-gray-70); font-size: 0.875rem;"></div>
+            <div class="cds--pagination">
+                <button class="cds--pagination__button" id="prevBtn" onclick="changePage(-1)">
+                    <svg class="cds--pagination__button-icon" viewBox="0 0 16 16"><path d="M10 13L6 8l4-5"/></svg>
+                </button>
+                <span id="pageInfo" style="margin: 0 var(--carbon-spacing-04);">Page 1</span>
+                <button class="cds--pagination__button" id="nextBtn" onclick="changePage(1)">
+                    <svg class="cds--pagination__button-icon" viewBox="0 0 16 16"><path d="M6 3l4 5-4 5"/></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Subject Modal -->
+<div id="subjectModal" class="modal-overlay">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 id="modalTitle">Add New Subject</h2>
+            <button class="modal-close" onclick="closeSubjectModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="subjectForm">
+                <input type="hidden" id="subjectId" name="id">
+                <div class="modal-form-row">
+                    <div class="modal-form-group">
+                        <label for="subjectName">Subject Name *</label>
+                        <input type="text" id="subjectName" name="name" class="cds--text-input" placeholder="e.g., Mathematics, English" required>
+                    </div>
+                    <div class="modal-form-group">
+                        <label for="subjectCode">Subject Code</label>
+                        <input type="text" id="subjectCode" name="code" class="cds--text-input" placeholder="e.g., MATH, ENG">
+                    </div>
+                </div>
+                <div class="modal-form-row">
+                    <div class="modal-form-group">
+                        <label for="subjectType">Subject Type</label>
+                        <div class="cds--select">
+                            <select id="subjectType" name="subject_type" class="cds--select-input">
+                                <option value="">Select...</option>
+                                <option value="core">Core</option>
+                                <option value="elective">Elective</option>
+                                <option value="optional">Optional</option>
+                            </select>
+                            <svg class="cds--select__arrow" viewBox="0 0 16 16" width="16" height="16"><path d="M8 11L3 6h10l-5 5z"/></svg>
+                        </div>
+                    </div>
+                    <div class="modal-form-group" style="display: flex; align-items: center; margin-top: var(--carbon-spacing-06);">
+                        <input type="checkbox" id="subjectCompulsory" name="is_compulsory" class="cds--checkbox" value="true">
+                        <label for="subjectCompulsory" style="margin-bottom: 0; margin-left: var(--carbon-spacing-02);">Compulsory for all classes</label>
+                    </div>
+                </div>
+                <div class="modal-form-row">
+                    <div class="modal-form-group" style="display: flex; align-items: center; margin-top: var(--carbon-spacing-02);">
+                        <input type="checkbox" id="subjectActive" name="is_active" class="cds--checkbox" value="true" checked>
+                        <label for="subjectActive" style="margin-bottom: 0; margin-left: var(--carbon-spacing-02);">Active</label>
+                    </div>
+                </div>
+                <div class="modal-form-actions">
+                    <button type="button" class="cds--btn cds--btn--secondary" onclick="closeSubjectModal()">Cancel</button>
+                    <button type="submit" class="cds--btn cds--btn--primary" id="subjectSubmitBtn">Save Subject</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentPage = 1;
+    let pageSize = 20;
+    let searchTimeout = null;
+    let currentView = 'grid';
+
+    async function loadSubjects() {
+        const search = document.getElementById('searchInput').value;
+
+        document.getElementById('loadingState').style.display = 'block';
+        document.getElementById('gridView').style.display = 'none';
+        document.getElementById('listView').classList.remove('active');
+        document.getElementById('emptyState').style.display = 'none';
+
+        let url = `/api/academic/subjects/?page=${currentPage}&page_size=${pageSize}`;
+        if (search) url += `&search=${encodeURIComponent(search)}`;
+
+        try {
+            const res = await api.get(url);
+            if (res.ok) {
+                const data = await res.json();
+                displaySubjects(data);
+            } else {
+                showEmptyState();
+            }
+        } catch (e) {
+            console.log('Error loading subjects:', e);
+            showEmptyState();
+        }
+    }
+
+    function displaySubjects(data) {
+        const gridView = document.getElementById('gridView');
+        const tbody = document.getElementById('subjectTableBody');
+        gridView.innerHTML = '';
+        tbody.innerHTML = '';
+
+        if (data.results && data.results.length > 0) {
+            data.results.forEach(subject => {
+                // Grid view card
+                const card = document.createElement('div');
+                card.className = 'subject-card';
+                card.innerHTML = `
+                    <div class="subject-header">
+                        <div>
+                            <h3 class="subject-name">${subject.name}</h3>
+                            <span class="subject-code">${subject.code || 'N/A'}</span>
+                        </div>
+                        <div style="display: flex; gap: var(--carbon-spacing-02);">
+                            <span class="status-badge ${subject.is_compulsory ? 'status-compulsory' : 'status-active'}">${subject.is_compulsory ? 'Compulsory' : 'Elective'}</span>
+                            <span class="status-badge ${subject.is_active ? 'status-active' : 'status-inactive'}">${subject.is_active ? 'Active' : 'Inactive'}</span>
+                        </div>
+                    </div>
+                    <div class="subject-stats">
+                        <div class="subject-stat">
+                            <div class="subject-stat-value">${subject.classes_count || 0}</div>
+                            <div class="subject-stat-label">Classes</div>
+                        </div>
+                    </div>
+                    <div style="margin-top: var(--carbon-spacing-04); display: flex; gap: var(--carbon-spacing-03);">
+                        <button class="cds--btn cds--btn--ghost cds--btn--sm" onclick="editSubject(${subject.id})">Edit</button>
+                    </div>
+                `;
+                gridView.appendChild(card);
+
+                // List view row
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><span class="subject-code">${subject.code || 'N/A'}</span></td>
+                    <td><strong>${subject.name}</strong></td>
+                    <td>${subject.is_compulsory ? '<span class="status-badge status-compulsory">Compulsory</span>' : '<span class="status-badge" style="background:var(--carbon-gray-10);">Elective</span>'}</td>
+                    <td>${subject.classes_count || 0}</td>
+                    <td>
+                        <div class="action-cell">
+                            <button class="cds--btn cds--btn--ghost cds--btn--sm" onclick="editSubject(${subject.id})">Edit</button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('gridView').style.display = 'grid';
+            document.getElementById('pagination').style.display = 'flex';
+
+            // Update pagination
+            const totalPages = Math.ceil(data.count / pageSize);
+            document.getElementById('pageInfo').textContent = `Page ${currentPage} of ${totalPages || 1}`;
+            document.getElementById('resultsInfo').textContent = `Showing ${data.results.length} of ${data.count} subjects`;
+            document.getElementById('prevBtn').disabled = currentPage === 1;
+            document.getElementById('nextBtn').disabled = currentPage >= totalPages;
+        } else {
+            showEmptyState();
+        }
+    }
+
+    function showEmptyState() {
+        document.getElementById('loadingState').style.display = 'none';
+        document.getElementById('gridView').style.display = 'none';
+        document.getElementById('listView').classList.remove('active');
+        document.getElementById('emptyState').style.display = 'block';
+        document.getElementById('pagination').style.display = 'none';
+        document.getElementById('resultsInfo').textContent = 'No subjects found';
+    }
+
+    function changePage(delta) {
+        currentPage += delta;
+        loadSubjects();
+    }
+
+    function debounceSearch(event) {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            currentPage = 1;
+            loadSubjects();
+        }, 300);
+    }
+
+    function setView(view) {
+        currentView = view;
+        document.getElementById('gridView').style.display = view === 'grid' ? 'grid' : 'none';
+        document.getElementById('listView').classList.toggle('active', view === 'list');
+        document.getElementById('gridViewBtn').classList.toggle('active', view === 'grid');
+        document.getElementById('listViewBtn').classList.toggle('active', view === 'list');
+    }
+
+    function openAddSubjectModal() {
+        document.getElementById('modalTitle').textContent = 'Add New Subject';
+        document.getElementById('subjectForm').reset();
+        document.getElementById('subjectId').value = '';
+        document.getElementById('subjectActive').checked = true;
+        document.getElementById('subjectModal').classList.add('active');
+    }
+
+    async function editSubject(id) {
+        try {
+            const res = await api.get(`/api/academic/subjects/${id}/`);
+            if (res.ok) {
+                const subject = await res.json();
+                document.getElementById('modalTitle').textContent = 'Edit Subject';
+                document.getElementById('subjectId').value = subject.id;
+                document.getElementById('subjectName').value = subject.name || '';
+                document.getElementById('subjectCode').value = subject.code || '';
+                document.getElementById('subjectCompulsory').checked = subject.is_compulsory;
+                document.getElementById('subjectActive').checked = subject.is_active;
+                document.getElementById('subjectModal').classList.add('active');
+            }
+        } catch (e) {
+            alert('Error loading subject: ' + e.message);
+        }
+    }
+
+    function closeSubjectModal() {
+        document.getElementById('subjectModal').classList.remove('active');
+    }
+
+    document.getElementById('subjectForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const formData = new FormData(e.target);
+        const data = Object.fromEntries(formData.entries());
+        data.is_compulsory = document.getElementById('subjectCompulsory').checked;
+        data.is_active = document.getElementById('subjectActive').checked;
+
+        const subjectId = document.getElementById('subjectId').value;
+        const url = subjectId ? `/api/academic/subjects/${subjectId}/` : '/api/academic/subjects/';
+        const method = subjectId ? 'PATCH' : 'POST';
+
+        const submitBtn = document.getElementById('subjectSubmitBtn');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="cds--loading__svg" style="width:16px;height:16px;margin:0"><circle class="cds--loading__stroke" cx="8" cy="8" r="6"/></span> Saving...';
+
+        try {
+            const res = await api.request(url, { method, body: JSON.stringify(data) });
+
+            if (res.ok) {
+                closeSubjectModal();
+                loadSubjects();
+                showToast(subjectId ? 'Subject updated successfully!' : 'Subject created successfully!', 'success');
+            } else {
+                const error = await res.json();
+                throw new Error(error.detail || Object.values(error).flat().join(', ') || 'Failed to save subject');
+            }
+        } catch (e) {
+            alert('Error: ' + e.message);
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = 'Save Subject';
+        }
+    });
+
+    // Close modal on overlay click
+    document.getElementById('subjectModal').addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) closeSubjectModal();
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        Breadcrumb.render('subjectsBreadcrumb');
+        loadSubjects();
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,377 @@
+{% extends 'base.html' %}
+
+{% block title %}Link Parent to Student - Friends of Children SMS{% endblock %}
+
+{% block body %}
+<style>
+    .page-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--carbon-spacing-05); }
+    .page-title h1 { margin: 0; }
+    .form-section { margin-bottom: var(--carbon-spacing-06); }
+    .form-section h3 { margin-bottom: var(--carbon-spacing-04); padding-bottom: var(--carbon-spacing-03); border-bottom: 1px solid var(--carbon-gray-20); }
+    .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--carbon-spacing-04); }
+    .form-actions { display: flex; gap: var(--carbon-spacing-04); margin-top: var(--carbon-spacing-06); padding-top: var(--carbon-spacing-05); border-top: 1px solid var(--carbon-gray-20); }
+    .error-message { background: rgba(218, 30, 40, 0.1); border-left: 3px solid var(--carbon-red-60); color: var(--carbon-red-60); padding: var(--carbon-spacing-04); margin-bottom: var(--carbon-spacing-05); display: none; }
+    .success-message { background: rgba(36, 161, 72, 0.1); border-left: 3px solid var(--carbon-green-60); color: var(--carbon-green-60); padding: var(--carbon-spacing-04); margin-bottom: var(--carbon-spacing-05); display: none; }
+    .selection-card { display: flex; align-items: center; gap: var(--carbon-spacing-04); padding: var(--carbon-spacing-04); background: var(--carbon-gray-10); border-radius: 4px; cursor: pointer; transition: all 240ms; }
+    .selection-card:hover { background: var(--carbon-gray-20); }
+    .selection-card.selected { background: rgba(15, 98, 254, 0.1); border: 2px solid var(--carbon-blue-60); }
+    .selection-avatar { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 1.25rem; color: white; }
+    .student-avatar { background: var(--carbon-green-60); }
+    .parent-avatar { background: var(--carbon-purple-60); }
+    .selection-info { flex: 1; }
+    .selection-info h4 { margin: 0; font-size: 1rem; }
+    .selection-info p { margin: 0; font-size: 0.875rem; color: var(--carbon-gray-70); }
+    .checkbox-indicator { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--carbon-gray-30); display: flex; align-items: center; justify-content: center; }
+    .selection-card.selected .checkbox-indicator { border-color: var(--carbon-blue-60); background: var(--carbon-blue-60); color: white; }
+    .existing-links { margin-top: var(--carbon-spacing-05); }
+    .link-item { display: flex; align-items: center; justify-content: space-between; padding: var(--carbon-spacing-04); border-bottom: 1px solid var(--carbon-gray-20); }
+    .link-item:last-child { border-bottom: none; }
+    .link-item-info { display: flex; align-items: center; gap: var(--carbon-spacing-03); }
+    .link-badge { padding: 0.25rem 0.75rem; border-radius: 1rem; font-size: 0.75rem; font-weight: 500; }
+    .link-badge.primary { background: rgba(36, 161, 72, 0.1); color: var(--carbon-green-60); }
+    .link-badge.not-primary { background: var(--carbon-gray-10); color: var(--carbon-gray-70); }
+</style>
+
+<header class="page-header">
+    <div class="cds--grid">
+        <h1>Link Parent to Student</h1>
+        <a href="/parents/">&larr; Back to Parents</a>
+    </div>
+</header>
+
+<div class="main-content">
+    <div class="cds--grid">
+        <!-- Breadcrumb -->
+        <div class="breadcrumb" id="linkParentBreadcrumb">
+            <a href="/dashboard/">Home</a>
+            <span class="breadcrumb-separator">/</span>
+            <a href="/parents/">Parents</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-current">Link to Student</span>
+        </div>
+
+        <div id="errorMessage" class="error-message"></div>
+        <div id="successMessage" class="success-message"></div>
+
+        <!-- Step 1: Select Student -->
+        <div class="form-section cds--tile">
+            <h3>Step 1: Select Student</h3>
+            <div class="form-row" style="margin-bottom: var(--carbon-spacing-04);">
+                <div class="cds--form-item" style="flex: 1;">
+                    <input type="text" id="studentSearch" class="cds--text-input" placeholder="Search by name or admission number..." onkeyup="searchStudents()">
+                </div>
+            </div>
+            <div id="studentList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: var(--carbon-spacing-03);">
+                <!-- Dynamic content -->
+            </div>
+        </div>
+
+        <!-- Step 2: Select Parent -->
+        <div class="form-section cds--tile">
+            <h3>Step 2: Select Parent</h3>
+            <div class="form-row" style="margin-bottom: var(--carbon-spacing-04);">
+                <div class="cds--form-item" style="flex: 1;">
+                    <input type="text" id="parentSearch" class="cds--text-input" placeholder="Search by name or phone..." onkeyup="searchParents()">
+                </div>
+            </div>
+            <div id="parentList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: var(--carbon-spacing-03);">
+                <!-- Dynamic content -->
+            </div>
+        </div>
+
+        <!-- Step 3: Link Settings -->
+        <div class="form-section cds--tile">
+            <h3>Step 3: Link Settings</h3>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="parent_type">Parent Type *</label>
+                    <div class="cds--select">
+                        <select id="parent_type" name="parent_type" class="cds--select-input" required>
+                            <option value="">Select...</option>
+                            <option value="father">Father</option>
+                            <option value="mother">Mother</option>
+                            <option value="guardian">Guardian</option>
+                            <option value="other">Other</option>
+                        </select>
+                        <svg class="cds--select__arrow" viewBox="0 0 16 16" width="16" height="16"><path d="M8 11L3 6h10l-5 5z"/></svg>
+                    </div>
+                </div>
+            </div>
+            <div class="form-row" style="margin-top: var(--carbon-spacing-04);">
+                <div class="cds--checkbox-wrapper">
+                    <input type="checkbox" id="is_primary" name="is_primary" class="cds--checkbox" value="true">
+                    <label for="is_primary">Primary Contact</label>
+                </div>
+                <div class="cds--checkbox-wrapper">
+                    <input type="checkbox" id="link_can_receive_sms" name="can_receive_sms" class="cds--checkbox" value="true" checked>
+                    <label for="link_can_receive_sms">Can Receive SMS</label>
+                </div>
+                <div class="cds--checkbox-wrapper">
+                    <input type="checkbox" id="link_can_pickup" name="can_pickup" class="cds--checkbox" value="true">
+                    <label for="link_can_pickup">Can Pick Up Child</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Existing Links -->
+        <div class="form-section cds--tile existing-links" id="existingLinksSection" style="display: none;">
+            <h3>Existing Links for Selected Student</h3>
+            <div id="existingLinksList">
+                <!-- Dynamic content -->
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="form-actions">
+            <a href="/parents/" class="cds--btn cds--btn--secondary">Cancel</a>
+            <button type="button" class="cds--btn cds--btn--primary" id="linkBtn" onclick="createLink()" disabled>
+                <span id="linkText">Link Parent to Student</span>
+                <span id="linkLoading" style="display: none;">
+                    <span class="cds--loading__svg" style="width:16px;height:16px;margin:0"><circle class="cds--loading__stroke" cx="8" cy="8" r="6"/></span> Linking...
+                </span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let selectedStudent = null;
+    let selectedParent = null;
+    let students = [];
+    let parents = [];
+    let studentSearchTimeout = null;
+    let parentSearchTimeout = null;
+
+    async function searchStudents() {
+        clearTimeout(studentSearchTimeout);
+        studentSearchTimeout = setTimeout(async () => {
+            const search = document.getElementById('studentSearch').value;
+            let url = '/api/students/students/?page=1&page_size=50';
+            if (search) url += `&search=${encodeURIComponent(search)}`;
+
+            try {
+                const res = await api.get(url);
+                if (res.ok) {
+                    const data = await res.json();
+                    students = data.results || [];
+                    displayStudents();
+                    if (selectedStudent) loadExistingLinks();
+                }
+            } catch (e) {
+                console.log('Error searching students:', e);
+            }
+        }, 300);
+    }
+
+    function displayStudents() {
+        const container = document.getElementById('studentList');
+        container.innerHTML = '';
+
+        if (students.length === 0) {
+            container.innerHTML = '<p style="color: var(--carbon-gray-70);">No students found.</p>';
+            return;
+        }
+
+        students.forEach(student => {
+            const div = document.createElement('div');
+            div.className = `selection-card ${selectedStudent?.id === student.id ? 'selected' : ''}`;
+            div.onclick = () => selectStudent(student);
+            div.innerHTML = `
+                <div class="selection-avatar student-avatar">${(student.first_name || '')[0] || ''}${(student.last_name || '')[0] || ''}</div>
+                <div class="selection-info">
+                    <h4>${student.first_name || ''} ${student.last_name || ''}</h4>
+                    <p>${student.admission_number || student.student_number || 'N/A'} | ${student.current_class || 'No class'}</p>
+                </div>
+                <div class="checkbox-indicator">${selectedStudent?.id === student.id ? '✓' : ''}</div>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    function selectStudent(student) {
+        selectedStudent = student;
+        displayStudents();
+        displayParents();
+        loadExistingLinks();
+        updateLinkButton();
+    }
+
+    async function searchParents() {
+        clearTimeout(parentSearchTimeout);
+        parentSearchTimeout = setTimeout(async () => {
+            const search = document.getElementById('parentSearch').value;
+            let url = '/api/parents/parents/?page=1&page_size=50';
+            if (search) url += `&search=${encodeURIComponent(search)}`;
+
+            try {
+                const res = await api.get(url);
+                if (res.ok) {
+                    const data = await res.json();
+                    parents = data.results || [];
+                    displayParents();
+                }
+            } catch (e) {
+                console.log('Error searching parents:', e);
+            }
+        }, 300);
+    }
+
+    function displayParents() {
+        const container = document.getElementById('parentList');
+        container.innerHTML = '';
+
+        if (parents.length === 0) {
+            container.innerHTML = '<p style="color: var(--carbon-gray-70);">No parents found. <a href="/parents/add/">Add a parent first</a>.</p>';
+            return;
+        }
+
+        parents.forEach(parent => {
+            const div = document.createElement('div');
+            div.className = `selection-card ${selectedParent?.id === parent.id ? 'selected' : ''}`;
+            div.onclick = () => selectParent(parent);
+            div.innerHTML = `
+                <div class="selection-avatar parent-avatar">${(parent.first_name || '')[0] || ''}${(parent.last_name || '')[0] || ''}</div>
+                <div class="selection-info">
+                    <h4>${parent.first_name || ''} ${parent.last_name || ''}</h4>
+                    <p>${parent.phone || 'N/A'} | ${parent.relationship || ''}</p>
+                </div>
+                <div class="checkbox-indicator">${selectedParent?.id === parent.id ? '✓' : ''}</div>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    function selectParent(parent) {
+        selectedParent = parent;
+        displayParents();
+        updateLinkButton();
+    }
+
+    function updateLinkButton() {
+        const btn = document.getElementById('linkBtn');
+        btn.disabled = !(selectedStudent && selectedParent);
+    }
+
+    async function loadExistingLinks() {
+        if (!selectedStudent) {
+            document.getElementById('existingLinksSection').style.display = 'none';
+            return;
+        }
+
+        try {
+            const res = await api.get(`/api/students/students/${selectedStudent.id}/`);
+            if (res.ok) {
+                const student = await res.json();
+                const section = document.getElementById('existingLinksSection');
+                const list = document.getElementById('existingLinksList');
+
+                if (student.parents && student.parents.length > 0) {
+                    section.style.display = 'block';
+                    list.innerHTML = student.parents.map(p => `
+                        <div class="link-item">
+                            <div class="link-item-info">
+                                <div class="selection-avatar parent-avatar" style="width:32px;height:32px;font-size:0.875rem;">
+                                    ${(p.first_name || '')[0] || ''}${(p.last_name || '')[0] || ''}
+                                </div>
+                                <div>
+                                    <strong>${p.first_name || ''} ${p.last_name || ''}</strong>
+                                    <span style="color: var(--carbon-gray-70);">(${p.phone || 'N/A'})</span>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: var(--carbon-spacing-03); align-items: center;">
+                                <span class="link-badge ${p.is_primary ? 'primary' : 'not-primary'}">${p.is_primary ? 'Primary' : p.parent_type || ''}</span>
+                                <button class="cds--btn cds--btn--danger--ghost cds--btn--sm" onclick="removeLink(${p.id})">Remove</button>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    section.style.display = 'none';
+                }
+            }
+        } catch (e) {
+            console.log('Error loading existing links:', e);
+        }
+    }
+
+    async function removeLink(linkId) {
+        if (!confirm('Are you sure you want to remove this link?')) return;
+
+        try {
+            const res = await api.delete(`/api/parents/student-parents/${linkId}/`);
+            if (res.ok) {
+                showToast('Link removed successfully', 'success');
+                loadExistingLinks();
+            } else {
+                throw new Error('Failed to remove link');
+            }
+        } catch (e) {
+            showToast('Error: ' + e.message, 'error');
+        }
+    }
+
+    async function createLink() {
+        if (!selectedStudent || !selectedParent) return;
+
+        const data = {
+            student: selectedStudent.id,
+            parent: selectedParent.id,
+            parent_type: document.getElementById('parent_type').value,
+            is_primary: document.getElementById('is_primary').checked,
+            can_receive_sms: document.getElementById('link_can_receive_sms').checked,
+            can_pickup: document.getElementById('link_can_pickup').checked,
+        };
+
+        if (!data.parent_type) {
+            document.getElementById('errorMessage').textContent = 'Please select a parent type';
+            document.getElementById('errorMessage').style.display = 'block';
+            return;
+        }
+
+        document.getElementById('linkText').style.display = 'none';
+        document.getElementById('linkLoading').style.display = 'inline-flex';
+        document.getElementById('linkBtn').disabled = true;
+        document.getElementById('errorMessage').style.display = 'none';
+
+        try {
+            const res = await api.post('/api/parents/student-parents/', data);
+
+            if (res.ok) {
+                document.getElementById('successMessage').textContent = `${selectedParent.first_name} ${selectedParent.last_name} linked to ${selectedStudent.first_name} ${selectedStudent.last_name} successfully!`;
+                document.getElementById('successMessage').style.display = 'block';
+                window.scrollTo(0, 0);
+
+                // Reset selections
+                selectedStudent = null;
+                selectedParent = null;
+                displayStudents();
+                displayParents();
+                loadExistingLinks();
+
+                // Reset form
+                document.getElementById('parent_type').value = '';
+                document.getElementById('is_primary').checked = false;
+                document.getElementById('link_can_receive_sms').checked = true;
+                document.getElementById('link_can_pickup').checked = false;
+            } else {
+                const error = await res.json();
+                throw new Error(error.detail || Object.values(error).flat().join(', ') || 'Failed to create link');
+            }
+        } catch (e) {
+            document.getElementById('errorMessage').textContent = e.message;
+            document.getElementById('errorMessage').style.display = 'block';
+            window.scrollTo(0, 0);
+        } finally {
+            document.getElementById('linkText').style.display = 'inline';
+            document.getElementById('linkLoading').style.display = 'none';
+            document.getElementById('linkBtn').disabled = false;
+            updateLinkButton();
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        Breadcrumb.render('linkParentBreadcrumb');
+        searchStudents();
+        searchParents();
+    });
+</script>
+{% endblock %}

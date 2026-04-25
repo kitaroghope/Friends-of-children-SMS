@@ -21,6 +21,7 @@
             --carbon-black: #161616;
             --carbon-gray-70: #525252;
             --carbon-gray-50: #8d8d8d;
+            --carbon-cyan-60: #1192e8;
             --carbon-spacing-06: 0.25rem;
             --carbon-spacing-09: 1rem;
             --carbon-spacing-10: 1.5rem;
@@ -69,15 +70,63 @@
             margin-bottom: var(--carbon-spacing-12);
         }
 
+        .form-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--carbon-spacing-11);
+            padding-bottom: var(--carbon-spacing-09);
+            border-bottom: 1px solid var(--carbon-gray-20);
+        }
+
+        .form-header h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .help-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--carbon-spacing-06);
+            padding: var(--carbon-spacing-06) var(--carbon-spacing-09);
+            background: transparent;
+            border: 1px solid var(--carbon-blue-60);
+            color: var(--carbon-blue-60);
+            font-family: var(--carbon-font-family);
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 70ms cubic-bezier(0.2, 0, 0.38, 0.9);
+        }
+
+        .help-btn:hover {
+            background: var(--carbon-blue-60);
+            color: var(--carbon-white);
+        }
+
+        .help-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
         .form-section {
             margin-bottom: var(--carbon-spacing-11);
         }
 
         .section-title {
-            font-size: 1.25rem;
+            font-size: 1.125rem;
             font-weight: 600;
             color: var(--carbon-gray-70);
             margin-bottom: var(--carbon-spacing-09);
+            display: flex;
+            align-items: center;
+            gap: var(--carbon-spacing-06);
+        }
+
+        .section-title svg {
+            width: 20px;
+            height: 20px;
+            color: var(--carbon-cyan-60);
         }
 
         .form-row {
@@ -92,11 +141,75 @@
             flex-direction: column;
         }
 
+        .form-label-wrapper {
+            display: flex;
+            align-items: center;
+            gap: var(--carbon-spacing-06);
+            margin-bottom: var(--carbon-spacing-06);
+        }
+
         label {
             font-size: 0.75rem;
             font-weight: 400;
             color: var(--carbon-gray-70);
-            margin-bottom: var(--carbon-spacing-06);
+        }
+
+        .tooltip-trigger {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--carbon-gray-20);
+            color: var(--carbon-gray-70);
+            cursor: help;
+            font-size: 0.625rem;
+            font-weight: bold;
+            position: relative;
+        }
+
+        .tooltip-trigger:hover .tooltip-content {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .tooltip-content {
+            position: absolute;
+            bottom: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%) translateY(-4px);
+            background: var(--carbon-black);
+            color: var(--carbon-white);
+            padding: var(--carbon-spacing-07) var(--carbon-spacing-09);
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 400;
+            white-space: nowrap;
+            z-index: 100;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 110ms cubic-bezier(0.2, 0, 0.38, 0.9);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            line-height: 1.4;
+        }
+
+        .tooltip-content::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 4px solid transparent;
+            border-top-color: var(--carbon-black);
+        }
+
+        .form-hint {
+            font-size: 0.75rem;
+            color: var(--carbon-gray-50);
+            margin-top: var(--carbon-spacing-05);
+            font-style: italic;
         }
 
         input {
@@ -114,6 +227,10 @@
         input:focus {
             outline: none;
             border-bottom: 2px solid var(--carbon-blue-60);
+        }
+
+        input::placeholder {
+            color: var(--carbon-gray-50);
         }
 
         .cds--btn {
@@ -157,6 +274,10 @@
             color: var(--carbon-blue-60);
             text-decoration: none;
             font-size: 0.875rem;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
         }
 
         .alert {
@@ -246,6 +367,14 @@
 
     <main class="cds--grid">
         <div class="form-container">
+            <div class="form-header">
+                <h2>Create Your Account</h2>
+                <button type="button" class="help-btn" onclick="Modal.open('helpModal')">
+                    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 10.5a1.5 1.5 0 110-3 1.5 1.5 0 010 3z"/><path d="M7.25 7h1.5v2h-1.5V7zm1.5-3.25h-2v.75h1.5v.5h-.75v.5h1v.75h.75V7.5h-1.5V3.75z"/></svg>
+                    Need Help?
+                </button>
+            </div>
+
             <div id="success-alert" class="alert alert--success">
                 <strong>Success!</strong> Your account has been created. You can now log in.
             </div>
@@ -258,38 +387,76 @@
                 {% csrf_token %}
 
                 <div class="form-section">
-                    <h2 class="section-title">Personal Information</h2>
+                    <h3 class="section-title">
+                        <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"/></svg>
+                        Personal Information
+                    </h3>
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="first_name">First Name *</label>
+                            <div class="form-label-wrapper">
+                                <label for="first_name">First Name *</label>
+                                <span class="tooltip-trigger" tabindex="0">?
+                                    <span class="tooltip-content">Your given name as it appears on official documents</span>
+                                </span>
+                            </div>
                             <input type="text" id="first_name" name="first_name" placeholder="Enter first name" required>
                         </div>
                         <div class="form-group">
-                            <label for="last_name">Last Name *</label>
+                            <div class="form-label-wrapper">
+                                <label for="last_name">Last Name *</label>
+                                <span class="tooltip-trigger" tabindex="0">?
+                                    <span class="tooltip-content">Your family or surname</span>
+                                </span>
+                            </div>
                             <input type="text" id="last_name" name="last_name" placeholder="Enter last name" required>
                         </div>
                         <div class="form-group">
-                            <label for="phone">Phone Number *</label>
+                            <div class="form-label-wrapper">
+                                <label for="phone">Phone Number *</label>
+                                <span class="tooltip-trigger" tabindex="0">?
+                                    <span class="tooltip-content">Include country code (e.g., +256 for Uganda)</span>
+                                </span>
+                            </div>
                             <input type="tel" id="phone" name="phone" placeholder="+256..." required>
+                            <span class="form-hint">We'll send verification SMS to this number</span>
                         </div>
                     </div>
                 </div>
 
                 <div class="form-section">
-                    <h2 class="section-title">Account Credentials</h2>
+                    <h3 class="section-title">
+                        <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a8 8 0 00-8 8v2a3 3 0 013-3h10a3 3 0 013 3v2a8 8 0 00-8-8zm0 16a6 6 0 110-12 6 6 0 010 12z"/><path d="M10 6a1 1 0 011 1v4h2a1 1 0 010 2h-2v1a1 1 0 01-2 0v-4H7a1 1 0 010-2h2V7a1 1 0 011-1z"/></svg>
+                        Account Credentials
+                    </h3>
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="email">Email Address *</label>
+                            <div class="form-label-wrapper">
+                                <label for="email">Email Address *</label>
+                                <span class="tooltip-trigger" tabindex="0">?
+                                    <span class="tooltip-content">Used for account recovery and notifications</span>
+                                </span>
+                            </div>
                             <input type="email" id="email" name="email" placeholder="your@email.com" required>
                         </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="password">Password * (min 8 characters)</label>
+                            <div class="form-label-wrapper">
+                                <label for="password">Password *</label>
+                                <span class="tooltip-trigger" tabindex="0">?
+                                    <span class="tooltip-content">Minimum 8 characters. Use letters and numbers for better security.</span>
+                                </span>
+                            </div>
                             <input type="password" id="password" name="password" minlength="8" required>
+                            <span class="form-hint">Minimum 8 characters</span>
                         </div>
                         <div class="form-group">
-                            <label for="password_confirm">Confirm Password *</label>
+                            <div class="form-label-wrapper">
+                                <label for="password_confirm">Confirm Password *</label>
+                                <span class="tooltip-trigger" tabindex="0">?
+                                    <span class="tooltip-content">Re-enter your password to confirm</span>
+                                </span>
+                            </div>
                             <input type="password" id="password_confirm" name="password_confirm" minlength="8" required>
                         </div>
                     </div>
@@ -304,8 +471,43 @@
     </main>
 
     <footer class="page-footer">
-        <p>Friends of Children School Management System &copy; 2025</p>
+        <p>Friends of Children School Management System &copy; </p>
     </footer>
+
+    <!-- Help Modal -->
+    <div class="modal-overlay" id="helpModal">
+        <div class="modal" style="max-width: 550px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Registration Help</h3>
+                <button class="modal-close" onclick="Modal.close('helpModal')">
+                    <svg viewBox="0 0 16 16"><path d="M12 4.7L11.3 4 8 7.3 4.7 4 4 4.7 7.3 8 4 11.3l.7.7L8 8.7l3.3 3.3.7-.7L8.7 8 12 4.7z"/></svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p><strong>How to Create Your Account:</strong></p>
+                <ol style="padding-left: 1.25rem; color: var(--carbon-gray-70); line-height: 1.8;">
+                    <li>Fill in your <strong>personal information</strong> - Use your real name as it appears on official documents</li>
+                    <li>Enter a valid <strong>phone number</strong> with country code (+256 for Uganda) - We'll use this for important SMS notifications</li>
+                    <li>Provide a valid <strong>email address</strong> for account recovery and system notifications</li>
+                    <li>Create a <strong>secure password</strong> with at least 8 characters</li>
+                    <li>Confirm your password by typing it again</li>
+                </ol>
+
+                <p style="margin-top: 1rem;"><strong>Why do we need this information?</strong></p>
+                <ul style="padding-left: 1.25rem; color: var(--carbon-gray-70); line-height: 1.8;">
+                    <li>Phone number - Used for SMS alerts about student attendance, fees, and emergencies</li>
+                    <li>Email - Used for password recovery and formal communications</li>
+                    <li>Name - Required for official reports and certificates</li>
+                </ul>
+
+                <p style="margin-top: 1rem;"><strong>Need more help?</strong></p>
+                <p style="color: var(--carbon-gray-70);">Contact our support team at <a href="mailto:support@friendsofchildren.edu" style="color: var(--carbon-blue-60);">support@friendsofchildren.edu</a></p>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn modal-btn--primary" onclick="Modal.close('helpModal')">Got it</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Success Modal -->
     <div class="modal-overlay" id="successModal">

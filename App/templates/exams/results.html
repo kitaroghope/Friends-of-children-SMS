@@ -1,0 +1,471 @@
+{% extends 'base.html' %}
+
+{% block title %}Results - Friends of Children SMS{% endblock %}
+
+{% block body %}
+<style>
+    .page-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--carbon-spacing-05); }
+    .page-title h1 { margin: 0; }
+    .filters-bar { display: flex; gap: var(--carbon-spacing-04); flex-wrap: wrap; margin-bottom: var(--carbon-spacing-05); }
+    .filters-bar .cds--select { min-width: 180px; }
+    .filters-bar .cds--text-input { min-width: 200px; }
+    .action-cell { display: flex; gap: var(--carbon-spacing-03); }
+    .empty-state { text-align: center; padding: 4rem 2rem; color: var(--carbon-gray-70); }
+    .empty-state svg { width: 64px; height: 64px; margin-bottom: var(--carbon-spacing-04); }
+    .status-badge { display: inline-flex; align-items: center; padding: 0.25rem 0.75rem; border-radius: 1rem; font-size: 0.75rem; font-weight: 500; }
+    .status-pass { background: rgba(36, 161, 72, 0.1); color: var(--carbon-green-60); }
+    .status-fail { background: rgba(218, 30, 40, 0.1); color: var(--carbon-red-60); }
+    .status-pending { background: rgba(240, 183, 55, 0.1); color: var(--carbon-orange-60); }
+    .student-row { display: flex; align-items: center; gap: var(--carbon-spacing-04); }
+    .student-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--carbon-blue-60); color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.875rem; }
+    .marks-input { width: 80px !important; text-align: center; }
+    .grade-badge { font-weight: 600; }
+    .table-actions { display: flex; gap: var(--carbon-spacing-03); justify-content: space-between; align-items: center; margin-bottom: var(--carbon-spacing-04); }
+    .save-indicator { display: flex; align-items: center; gap: var(--carbon-spacing-02); color: var(--carbon-green-60); }
+    .save-indicator.unsaved { color: var(--carbon-gray-70); }
+</style>
+
+<header class="page-header">
+    <div class="cds--grid">
+        <h1>Exam Results</h1>
+        <a href="/exams/">&larr; Back to Exams</a>
+    </div>
+</header>
+
+<div class="main-content">
+    <div class="cds--grid">
+        <!-- Breadcrumb -->
+        <div class="breadcrumb" id="examResultsBreadcrumb">
+            <a href="/dashboard/">Home</a>
+            <span class="breadcrumb-separator">/</span>
+            <a href="/exams/">Exams</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-current">Results</span>
+        </div>
+
+        <!-- Exam Selection -->
+        <div class="cds--tile" style="margin-bottom: var(--carbon-spacing-05);">
+            <h3 style="margin-bottom: var(--carbon-spacing-04);">Select Exam</h3>
+            <div class="filters-bar" style="margin-bottom: 0;">
+                <div class="cds--form-item">
+                    <div class="cds--select">
+                        <select id="examSetFilter" class="cds--select-input" onchange="loadExams()">
+                            <option value="">Select Exam Set...</option>
+                        </select>
+                        <svg class="cds--select__arrow" viewBox="0 0 16 16" width="16" height="16"><path d="M8 11L3 6h10l-5 5z"/></svg>
+                    </div>
+                </div>
+                <div class="cds--form-item">
+                    <div class="cds--select">
+                        <select id="examFilter" class="cds--select-input" onchange="loadStudents()" disabled>
+                            <option value="">Select Subject Exam...</option>
+                        </select>
+                        <svg class="cds--select__arrow" viewBox="0 0 16 16" width="16" height="16"><path d="M8 11L3 6h10l-5 5z"/></svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Info -->
+        <div id="resultsInfo" style="margin-bottom: var(--carbon-spacing-04); color: var(--carbon-gray-70); font-size: 0.875rem;"></div>
+
+        <!-- Results Table -->
+        <div class="cds--tile">
+            <div class="table-actions">
+                <div id="saveIndicator" class="save-indicator unsaved">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1l7 7H1l7-7z"/><path d="M8 4l-4 4h8l-4-4z"/></svg>
+                    <span>All changes saved</span>
+                </div>
+                <div style="display: flex; gap: var(--carbon-spacing-03);">
+                    <button class="cds--btn cds--btn--secondary" onclick="resetResults()">Reset Changes</button>
+                    <button class="cds--btn cds--btn--primary" onclick="saveAllResults()">Save All</button>
+                </div>
+            </div>
+
+            <table class="cds--data-table" id="resultsTable">
+                <thead>
+                    <tr>
+                        <th style="width: 40px;"></th>
+                        <th>Student</th>
+                        <th>Adm. No.</th>
+                        <th>Marks</th>
+                        <th>Grade</th>
+                        <th>Status</th>
+                        <th style="width: 150px;">Remarks</th>
+                    </tr>
+                </thead>
+                <tbody id="resultsTableBody">
+                    <!-- Dynamic content -->
+                </tbody>
+            </table>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="empty-state" style="display: none;">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3z"/></svg>
+                <h3 id="emptyTitle">No Students Found</h3>
+                <p id="emptyMessage">Select an exam to enter results.</p>
+            </div>
+
+            <!-- Loading -->
+            <div id="loadingState" class="empty-state">
+                <div class="cds--loading">
+                    <svg class="cds--loading__svg" viewBox="0 0 100 100">
+                        <circle class="cds--loading__stroke" cx="50" cy="50" r="40"></circle>
+                    </svg>
+                </div>
+                <p style="margin-top: var(--carbon-spacing-04);">Loading students...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentExam = null;
+    let resultsData = new Map();
+    let maxScore = 100;
+
+    async function loadExamSets() {
+        try {
+            const res = await api.get('/api/exams/exam-sets/?page=1&page_size=100');
+            if (res.ok) {
+                const data = await res.json();
+                const select = document.getElementById('examSetFilter');
+                data.results.forEach(exam => {
+                    const option = document.createElement('option');
+                    option.value = exam.id;
+                    option.textContent = `${exam.name} (${exam.class_name})`;
+                    select.appendChild(option);
+                });
+            }
+        } catch (e) {
+            console.log('Could not load exam sets');
+        }
+    }
+
+    async function loadExams() {
+        const examSetId = document.getElementById('examSetFilter').value;
+        const examSelect = document.getElementById('examFilter');
+
+        examSelect.innerHTML = '<option value="">Select Subject Exam...</option>';
+        examSelect.disabled = true;
+        document.getElementById('resultsTableBody').innerHTML = '';
+        document.getElementById('emptyState').style.display = 'none';
+        document.getElementById('resultsTable').style.display = 'none';
+        resultsData.clear();
+
+        if (!examSetId) return;
+
+        try {
+            const res = await api.get(`/api/exams/exam-sets/${examSetId}/`);
+            if (res.ok) {
+                const examSet = await res.json();
+                if (examSet.exams && examSet.exams.length > 0) {
+                    examSet.exams.forEach(exam => {
+                        const option = document.createElement('option');
+                        option.value = exam.id;
+                        option.dataset.maxScore = exam.max_score || 100;
+                        option.textContent = exam.subject_name || 'Unknown Subject';
+                        examSelect.appendChild(option);
+                    });
+                    examSelect.disabled = false;
+                } else {
+                    showEmptyState('No Exams Created', 'This exam set has no subjects. Add exams first.');
+                }
+            }
+        } catch (e) {
+            console.log('Could not load exams');
+        }
+    }
+
+    async function loadStudents() {
+        const examId = document.getElementById('examFilter').value;
+        const examSelect = document.getElementById('examFilter');
+        maxScore = parseInt(examSelect.options[examSelect.selectedIndex]?.dataset.maxScore) || 100;
+
+        document.getElementById('loadingState').style.display = 'block';
+        document.getElementById('resultsTable').style.display = 'none';
+        document.getElementById('emptyState').style.display = 'none';
+
+        if (!examId) {
+            document.getElementById('loadingState').style.display = 'none';
+            return;
+        }
+
+        // Get exam details
+        try {
+            const examRes = await api.get(`/api/exams/exams/${examId}/`);
+            if (examRes.ok) {
+                currentExam = await examRes.json();
+            }
+        } catch (e) {
+            console.log('Could not load exam');
+        }
+
+        // Get students and their results
+        const examSetId = document.getElementById('examSetFilter').value;
+        try {
+            const studentsRes = await api.get(`/api/students/students/?page=1&page_size=100`);
+            const resultsRes = await api.get(`/api/exams/results/?exam=${examId}`);
+
+            if (studentsRes.ok && resultsRes.ok) {
+                const studentsData = await studentsRes.json();
+                const resultsDataJson = await resultsRes.json();
+                const existingResults = new Map(resultsDataJson.results?.map(r => [r.student, r]) || []);
+
+                // Store original results
+                resultsData.clear();
+                existingResults.forEach((v, k) => resultsData.set(k, { ...v }));
+
+                displayStudents(studentsData.results || [], existingResults);
+            } else {
+                showEmptyState('Error Loading', 'Failed to load data.');
+            }
+        } catch (e) {
+            console.log('Error loading students:', e);
+            showEmptyState('Error', 'Failed to load students.');
+        }
+    }
+
+    function displayStudents(students, existingResults) {
+        const tbody = document.getElementById('resultsTableBody');
+        tbody.innerHTML = '';
+
+        if (students.length === 0) {
+            showEmptyState('No Students', 'No students found in this class.');
+            return;
+        }
+
+        document.getElementById('loadingState').style.display = 'none';
+        document.getElementById('resultsTable').style.display = 'table';
+
+        let savedCount = 0;
+        let pendingCount = 0;
+
+        students.forEach(student => {
+            const result = existingResults.get(student.id) || {};
+            const initials = `${(student.first_name || '')[0] || ''}${(student.last_name || '')[0] || ''}`.toUpperCase();
+            const marks = result.marks ?? '';
+            const grade = calculateGrade(marks);
+            const status = getStatus(marks, grade);
+
+            if (marks !== '') savedCount++;
+            else pendingCount++;
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><div class="student-avatar">${initials}</div></td>
+                <td>
+                    <div class="student-row">
+                        <div>
+                            <div style="font-weight: 500;">${student.first_name || ''} ${student.last_name || ''}</div>
+                        </div>
+                    </div>
+                </td>
+                <td>${student.admission_number || student.student_number || 'N/A'}</td>
+                <td>
+                    <input type="number" class="cds--text-input marks-input"
+                           value="${marks}"
+                           min="0" max="${maxScore}"
+                           data-student="${student.id}"
+                           data-original="${marks}"
+                           onchange="updateMarks(this)"
+                           onkeyup="updateMarks(this)">
+                    <span style="font-size: 0.75rem; color: var(--carbon-gray-70);">/ ${maxScore}</span>
+                </td>
+                <td><span class="grade-badge" id="grade-${student.id}">${grade || '-'}</span></td>
+                <td><span class="status-badge ${status.class}">${status.text}</span></td>
+                <td>
+                    <input type="text" class="cds--text-input"
+                           value="${result.remarks || ''}"
+                           data-student="${student.id}"
+                           data-field="remarks"
+                           placeholder="Optional remarks..."
+                           style="width: 100%;"
+                           onchange="updateField(this)">
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        document.getElementById('resultsInfo').textContent = `Showing ${students.length} students (${savedCount} entered, ${pendingCount} pending)`;
+        updateSaveIndicator();
+    }
+
+    function calculateGrade(marks) {
+        if (marks === '' || marks === null) return '';
+        marks = parseFloat(marks);
+
+        // Uganda grading scale
+        if (marks >= 90) return 'D1';
+        if (marks >= 85) return 'D2';
+        if (marks >= 80) return 'C3';
+        if (marks >= 75) return 'C4';
+        if (marks >= 70) return 'C5';
+        if (marks >= 65) return 'C6';
+        if (marks >= 60) return 'P7';
+        if (marks >= 50) return 'P8';
+        return 'F9';
+    }
+
+    function getStatus(marks, grade) {
+        if (marks === '' || marks === null) {
+            return { class: 'status-pending', text: 'Pending' };
+        }
+        return grade.startsWith('F') ? { class: 'status-fail', text: 'Fail' } : { class: 'status-pass', text: 'Pass' };
+    }
+
+    function updateMarks(input) {
+        const studentId = parseInt(input.dataset.student);
+        const marks = input.value === '' ? null : parseFloat(input.value);
+        const original = input.dataset.original === '' ? null : parseFloat(input.dataset.original);
+
+        // Update grade display
+        const grade = calculateGrade(marks);
+        document.getElementById(`grade-${studentId}`).textContent = grade || '-';
+
+        // Update status
+        const status = getStatus(marks, grade);
+        const statusCell = input.closest('tr').querySelector('.status-badge');
+        statusCell.className = `status-badge ${status.class}`;
+        statusCell.textContent = status.text;
+
+        // Update results data
+        const existing = resultsData.get(studentId) || {};
+        resultsData.set(studentId, {
+            ...existing,
+            student: studentId,
+            exam: currentExam?.id,
+            marks: marks,
+            grade: grade || null,
+            status: marks === null ? 'pending' : (grade.startsWith('F') ? 'fail' : 'pass')
+        });
+
+        // Check if unsaved
+        const isSame = (a, b) => (a === null && b === null) || (a !== null && b !== null && Math.abs(a - b) < 0.01);
+        const hasChanges = !isSame(marks, original) ||
+                          (existing.remarks !== undefined && existing.remarks !== document.querySelector(`input[data-student="${studentId}"][data-field="remarks"]`).value);
+
+        if (hasChanges) {
+            input.style.borderColor = 'var(--carbon-orange-50)';
+        } else {
+            input.style.borderColor = '';
+        }
+
+        updateSaveIndicator();
+    }
+
+    function updateField(input) {
+        const studentId = parseInt(input.dataset.student);
+        const field = input.dataset.field;
+        const value = input.value;
+
+        const existing = resultsData.get(studentId) || {};
+        resultsData.set(studentId, {
+            ...existing,
+            student: studentId,
+            exam: currentExam?.id,
+            [field]: value
+        });
+
+        updateSaveIndicator();
+    }
+
+    function updateSaveIndicator() {
+        const indicator = document.getElementById('saveIndicator');
+        const hasChanges = Array.from(resultsData.values()).some(r =>
+            r.marks !== undefined &&
+            (r.marks === null || r.marks !== parseFloat(document.querySelector(`input.marks-input[data-student="${r.student}"]`)?.dataset.original || 'NaN'))
+        );
+
+        if (hasChanges) {
+            indicator.classList.remove('unsaved');
+            indicator.innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="8" r="6"/><path d="M6 8l1 1 2-2" stroke="white" stroke-width="2" fill="none"/></svg><span>Unsaved changes</span>`;
+        } else {
+            indicator.classList.add('unsaved');
+            indicator.innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1l7 7H1l7-7z"/><path d="M8 4l-4 4h8l-4-4z"/></svg><span>All changes saved</span>`;
+        }
+    }
+
+    async function saveAllResults() {
+        const examId = document.getElementById('examFilter').value;
+        if (!examId) return;
+
+        const results = Array.from(resultsData.values()).filter(r => r.marks !== undefined);
+
+        if (results.length === 0) {
+            showToast('No results to save', 'warning');
+            return;
+        }
+
+        const submitBtn = document.querySelector('.table-actions .cds--btn--primary');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="cds--loading__svg" style="width:16px;height:16px;margin:0"><circle class="cds--loading__stroke" cx="8" cy="8" r="6"/></span> Saving...';
+
+        let saved = 0;
+        let failed = 0;
+
+        for (const result of results) {
+            try {
+                const data = {
+                    student: result.student,
+                    exam: examId,
+                    marks: result.marks,
+                    grade: result.grade || calculateGrade(result.marks),
+                    status: result.status || (result.grade?.startsWith('F') ? 'fail' : 'pass'),
+                    remarks: result.remarks || ''
+                };
+
+                if (result.id) {
+                    // Update existing
+                    const res = await api.patch(`/api/exams/results/${result.id}/`, data);
+                    if (res.ok) saved++;
+                    else failed++;
+                } else {
+                    // Create new
+                    const res = await api.post('/api/exams/results/', data);
+                    if (res.ok) saved++;
+                    else failed++;
+                }
+            } catch (e) {
+                failed++;
+            }
+        }
+
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = 'Save All';
+
+        if (failed === 0) {
+            showToast(`Successfully saved ${saved} results!`, 'success');
+            loadStudents();
+        } else {
+            showToast(`${saved} saved, ${failed} failed`, 'error');
+        }
+    }
+
+    function resetResults() {
+        if (!confirm('Discard all unsaved changes?')) return;
+        loadStudents();
+    }
+
+    function showEmptyState(title, message) {
+        document.getElementById('loadingState').style.display = 'none';
+        document.getElementById('resultsTable').style.display = 'none';
+        document.getElementById('emptyState').style.display = 'block';
+        document.getElementById('emptyTitle').textContent = title;
+        document.getElementById('emptyMessage').textContent = message;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        Breadcrumb.render('examResultsBreadcrumb');
+        loadExamSets();
+
+        // Check for URL params
+        const urlParams = new URLSearchParams(window.location.search);
+        const examSetId = urlParams.get('exam_set');
+        if (examSetId) {
+            document.getElementById('examSetFilter').value = examSetId;
+            loadExams();
+        }
+    });
+</script>
+{% endblock %}

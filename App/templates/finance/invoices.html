@@ -1,0 +1,659 @@
+{% extends 'base.html' %}
+
+{% block title %}Invoices - Friends of Children SMS{% endblock %}
+
+{% block body %}
+<style>
+    .page-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--carbon-spacing-05); }
+    .page-title h1 { margin: 0; }
+    .filters-bar { display: flex; gap: var(--carbon-spacing-04); flex-wrap: wrap; margin-bottom: var(--carbon-spacing-05); }
+    .filters-bar .cds--select { min-width: 150px; }
+    .filters-bar .cds--text-input { min-width: 200px; }
+    .invoice-card { background: white; border-radius: 4px; padding: var(--carbon-spacing-05); margin-bottom: var(--carbon-spacing-04); border-left: 4px solid var(--carbon-blue-60); }
+    .invoice-card.draft { border-left-color: var(--carbon-gray-50); }
+    .invoice-card.sent { border-left-color: var(--carbon-blue-60); }
+    .invoice-card.paid { border-left-color: var(--carbon-green-60); }
+    .invoice-card.overdue { border-left-color: var(--carbon-red-60); }
+    .invoice-card.partial { border-left-color: var(--carbon-orange-60); }
+    .invoice-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: var(--carbon-spacing-03); }
+    .invoice-title { font-weight: 600; font-size: 1rem; }
+    .invoice-number { font-size: 0.875rem; color: var(--carbon-gray-70); }
+    .invoice-amount { font-size: 1.5rem; font-weight: 600; }
+    .invoice-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: var(--carbon-spacing-04); margin-top: var(--carbon-spacing-04); }
+    .invoice-detail { font-size: 0.875rem; }
+    .invoice-detail label { display: block; color: var(--carbon-gray-70); font-size: 0.75rem; margin-bottom: var(--carbon-spacing-02); }
+    .status-badge { display: inline-flex; align-items: center; padding: 0.25rem 0.75rem; border-radius: 1rem; font-size: 0.75rem; font-weight: 500; }
+    .status-draft { background: var(--carbon-gray-20); color: var(--carbon-gray-70); }
+    .status-sent { background: rgba(26, 99, 155, 0.1); color: #1a639b; }
+    .status-paid { background: rgba(36, 161, 72, 0.1); color: var(--carbon-green-60); }
+    .status-overdue { background: rgba(218, 30, 40, 0.1); color: var(--carbon-red-60); }
+    .status-partial { background: rgba(240, 183, 55, 0.1); color: var(--carbon-orange-60); }
+    .action-cell { display: flex; gap: var(--carbon-spacing-03); }
+    .empty-state { text-align: center; padding: 4rem 2rem; color: var(--carbon-gray-70); }
+    .empty-state svg { width: 64px; height: 64px; margin-bottom: var(--carbon-spacing-04); }
+    .progress-bar { height: 6px; background: var(--carbon-gray-20); border-radius: 3px; overflow: hidden; margin-top: var(--carbon-spacing-02); }
+    .progress-fill { height: 100%; background: var(--carbon-green-60); border-radius: 3px; transition: width 0.3s ease; }
+    .line-item { display: flex; justify-content: space-between; padding: var(--carbon-spacing-03) 0; border-bottom: 1px solid var(--carbon-gray-20); }
+    .line-item:last-child { border-bottom: none; font-weight: 600; }
+    .bulk-actions { display: flex; gap: var(--carbon-spacing-03); align-items: center; padding: var(--carbon-spacing-03) var(--carbon-spacing-04); background: var(--carbon-gray-10); border-radius: 4px; margin-bottom: var(--carbon-spacing-04); }
+    .bulk-actions-count { font-weight: 500; }
+    .summary-row { display: flex; justify-content: space-between; padding: var(--carbon-spacing-03) 0; border-top: 2px solid var(--carbon-gray-20); margin-top: var(--carbon-spacing-03); }
+    .summary-row.total { font-weight: 600; font-size: 1.125rem; border-top: none; margin-top: 0; }
+</style>
+
+<header class="page-header">
+    <div class="cds--grid">
+        <h1>Invoices</h1>
+        <a href="/finance/">&larr; Back to Finance</a>
+    </div>
+</header>
+
+<div class="main-content">
+    <div class="cds--grid">
+        <!-- Filters & Actions -->
+        <div class="cds--tile" style="margin-bottom: var(--carbon-spacing-05);">
+            <div class="filters-bar" style="margin-bottom: 0;">
+                <div class="cds--form-item">
+                    <label class="cds--label">Status</label>
+                    <select id="statusFilter" class="cds--select">
+                        <option value="">All Statuses</option>
+                        <option value="draft">Draft</option>
+                        <option value="sent">Sent</option>
+                        <option value="paid">Paid</option>
+                        <option value="partial">Partial</option>
+                        <option value="overdue">Overdue</option>
+                    </select>
+                </div>
+                <div class="cds--form-item">
+                    <label class="cds--label">Student/Family</label>
+                    <input type="text" id="searchFilter" class="cds--text-input" placeholder="Search name or invoice number...">
+                </div>
+                <div class="cds--form-item">
+                    <label class="cds--label">Date Range</label>
+                    <div style="display: flex; gap: var(--carbon-spacing-02);">
+                        <input type="date" id="dateFrom" class="cds--text-input" style="width: 140px;">
+                        <span style="align-self: center;">-</span>
+                        <input type="date" id="dateTo" class="cds--text-input" style="width: 140px;">
+                    </div>
+                </div>
+                <div style="flex: 1;"></div>
+                <button class="cds--btn cds--btn--secondary" onclick="bulkAction('send')">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style="margin-right: 4px;"><path d="M14 2L8 8l-6-6v3l6 6v5l2-2V2z"/></svg>
+                    Send Selected
+                </button>
+                <button class="cds--btn cds--btn--primary" onclick="openModal('createInvoiceModal')">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style="margin-right: 4px;"><path d="M8 2a.5.5 0 01.5.5v5h5a.5.5 0 010 1h-5v5a.5.5 0 01-1 0v-5h-5a.5.5 0 010-1h5v-5A.5.5 0 018 2z"/></svg>
+                    Create Invoice
+                </button>
+            </div>
+        </div>
+
+        <!-- Bulk Actions Bar -->
+        <div id="bulkActionsBar" class="bulk-actions" style="display: none;">
+            <span class="bulk-actions-count"><span id="selectedCount">0</span> selected</span>
+            <button class="cds--btn cds--btn--ghost cds--btn--sm" onclick="selectAll()">Select All</button>
+            <button class="cds--btn cds--btn--ghost cds--btn--sm" onclick="clearSelection()">Clear</button>
+            <div style="flex: 1;"></div>
+            <button class="cds--btn cds--btn--secondary cds--btn--sm" onclick="bulkAction('send')">Send</button>
+            <button class="cds--btn cds--btn--danger--ghost cds--btn--sm" onclick="bulkAction('delete')">Delete</button>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="stats-grid" style="margin-bottom: var(--carbon-spacing-05);">
+            <div class="stat-card">
+                <div class="stat-value" id="totalInvoices">-</div>
+                <div class="stat-label">Total Invoices</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalAmount">-</div>
+                <div class="stat-label">Total Billed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalPaid">-</div>
+                <div class="stat-label">Amount Paid</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="outstandingAmount">-</div>
+                <div class="stat-label">Outstanding</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="overdueCount">-</div>
+                <div class="stat-label">Overdue</div>
+            </div>
+        </div>
+
+        <!-- Invoice Cards -->
+        <div id="invoicesContainer"></div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="empty-state" style="display: none;">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 2l5 5h-5V4zM6 20V4h6v6h6v10H6z"/></svg>
+            <h3>No Invoices Found</h3>
+            <p>Create invoices to bill students/families.</p>
+            <button class="cds--btn cds--btn--primary" onclick="openModal('createInvoiceModal')">Create Invoice</button>
+        </div>
+
+        <!-- Loading -->
+        <div id="loadingState" class="empty-state">
+            <div class="cds--loading">
+                <svg class="cds--loading__svg" viewBox="0 0 100 100">
+                    <circle class="cds--loading__stroke" cx="50" cy="50" r="40"></circle>
+                </svg>
+            </div>
+            <p style="margin-top: var(--carbon-spacing-04);">Loading invoices...</p>
+        </div>
+    </div>
+</div>
+
+<!-- Create Invoice Modal -->
+<div id="createInvoiceModal" class="cds--modal" style="width: 800px; max-width: 90vw;">
+    <div class="cds--modal-container">
+        <div class="cds--modal-header">
+            <h3 class="cds--modal-header__heading">Create Invoice</h3>
+            <button class="cds--modal-close" onclick="closeModal('createInvoiceModal')">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M12 4.7L11.3 4 8 7.3 4.7 4 4 4.7 7.3 8 4 11.3l.7.7L8 8.7l3.3 3.3.7-.7L8.7 8l3.3-3.3z"/></svg>
+            </button>
+        </div>
+        <div class="cds--modal-content" style="max-height: 60vh; overflow-y: auto;">
+            <form id="invoiceForm">
+                <div class="cds--row">
+                    <div class="cds--col-md-6">
+                        <div class="cds--form-item">
+                            <label class="cds--label">Student/Family <span style="color: var(--carbon-red-60);">*</span></label>
+                            <select id="invoiceStudent" class="cds--select" required>
+                                <option value="">Select Student...</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="cds--col-md-6">
+                        <div class="cds--form-item">
+                            <label class="cds--label">Invoice Date <span style="color: var(--carbon-red-60);">*</span></label>
+                            <input type="date" id="invoiceDate" class="cds--text-input" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="cds--row">
+                    <div class="cds--col-md-6">
+                        <div class="cds--form-item">
+                            <label class="cds--label">Due Date <span style="color: var(--carbon-red-60);">*</span></label>
+                            <input type="date" id="invoiceDueDate" class="cds--text-input" required>
+                        </div>
+                    </div>
+                    <div class="cds--col-md-6">
+                        <div class="cds--form-item">
+                            <label class="cds--label">Academic Year</label>
+                            <select id="invoiceYear" class="cds--select">
+                                <option value="">Select Year...</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <h4 style="margin: var(--carbon-spacing-04) 0;">Invoice Items</h4>
+                <div id="invoiceItems">
+                    <div class="line-item-row" style="display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: var(--carbon-spacing-03); margin-bottom: var(--carbon-spacing-03);">
+                        <input type="text" class="cds--text-input item-description" placeholder="Description (e.g., Term 1 Tuition)">
+                        <input type="number" class="cds--text-input item-amount" placeholder="Amount" min="0">
+                        <select class="cds--select item-fee">
+                            <option value="">Select Fee Type...</option>
+                            <option value="tuition">Tuition</option>
+                            <option value="meals">Meals</option>
+                            <option value="transport">Transport</option>
+                            <option value="uniform">Uniform</option>
+                            <option value="books">Books</option>
+                            <option value="other">Other</option>
+                        </select>
+                        <button type="button" class="cds--btn cds--btn--danger--ghost cds--btn--sm" onclick="removeItem(this)">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M6 2a1 1 0 00-1 1v1H3a1 1 0 100 2h1v7a1 1 0 002 0v-7h1a1 1 0 100-2h-1V3a1 1 0 00-1-1zm2 1v7h2V4H8zM4 3h1v9H4V3z"/></svg>
+                        </button>
+                    </div>
+                </div>
+                <button type="button" class="cds--btn cds--btn--ghost cds--btn--sm" onclick="addItem()">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style="margin-right: 4px;"><path d="M8 2a.5.5 0 01.5.5v5h5a.5.5 0 010 1h-5v5a.5.5 0 01-1 0v-5h-5a.5.5 0 010-1h5v-5A.5.5 0 018 2z"/></svg>
+                    Add Item
+                </button>
+
+                <div class="summary-row">
+                    <span>Subtotal</span>
+                    <span id="subtotalAmount">UGX 0</span>
+                </div>
+                <div class="summary-row">
+                    <span>VAT (0%)</span>
+                    <span>UGX 0</span>
+                </div>
+                <div class="summary-row total">
+                    <span>Total</span>
+                    <span id="totalAmount">UGX 0</span>
+                </div>
+
+                <div class="cds--form-item" style="margin-top: var(--carbon-spacing-04);">
+                    <label class="cds--label">Notes</label>
+                    <textarea id="invoiceNotes" class="cds--text-input" rows="3" placeholder="Optional notes for the invoice..."></textarea>
+                </div>
+            </form>
+        </div>
+        <div class="cds--modal-footer">
+            <button class="cds--btn cds--btn--secondary" onclick="closeModal('createInvoiceModal')">Cancel</button>
+            <button class="cds--btn cds--btn--ghost" onclick="saveInvoice('draft')">Save as Draft</button>
+            <button class="cds--btn cds--btn--primary" onclick="saveInvoice('sent')">Create & Send</button>
+        </div>
+    </div>
+</div>
+
+<!-- View Invoice Modal -->
+<div id="viewInvoiceModal" class="cds--modal" style="width: 700px; max-width: 90vw;">
+    <div class="cds--modal-container">
+        <div class="cds--modal-header">
+            <h3 class="cds--modal-header__heading">Invoice Details</h3>
+            <button class="cds--modal-close" onclick="closeModal('viewInvoiceModal')">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M12 4.7L11.3 4 8 7.3 4.7 4 4 4.7 7.3 8 4 11.3l.7.7L8 8.7l3.3 3.3.7-.7L8.7 8l3.3-3.3z"/></svg>
+            </button>
+        </div>
+        <div class="cds--modal-content" id="viewInvoiceContent">
+            <!-- Dynamic content -->
+        </div>
+        <div class="cds--modal-footer">
+            <button class="cds--btn cds--btn--secondary" onclick="closeModal('viewInvoiceModal')">Close</button>
+            <button class="cds--btn cds--btn--primary" onclick="printInvoice()">Print Invoice</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let invoicesData = [];
+    let selectedIds = new Set();
+
+    async function loadFilters() {
+        // Academic years
+        try {
+            const yearsRes = await api.get('/api/schools/academic-years/?page=1&page_size=50');
+            if (yearsRes.ok) {
+                const data = await yearsRes.json();
+                const select = document.getElementById('invoiceYear');
+                data.results.forEach(year => {
+                    const opt = document.createElement('option');
+                    opt.value = year.id;
+                    opt.textContent = year.name;
+                    select.appendChild(opt);
+                });
+            }
+        } catch (e) { console.log('Could not load years'); }
+
+        // Students
+        try {
+            const studentsRes = await api.get('/api/students/students/?page=1&page_size=200');
+            if (studentsRes.ok) {
+                const data = await studentsRes.json();
+                const select = document.getElementById('invoiceStudent');
+                data.results.forEach(student => {
+                    const opt = document.createElement('option');
+                    opt.value = student.id;
+                    opt.textContent = `${student.first_name} ${student.last_name} (${student.admission_number})`;
+                    select.appendChild(opt);
+                });
+            }
+        } catch (e) { console.log('Could not load students'); }
+    }
+
+    async function loadInvoices() {
+        const status = document.getElementById('statusFilter').value;
+        const search = document.getElementById('searchFilter').value;
+        const dateFrom = document.getElementById('dateFrom').value;
+        const dateTo = document.getElementById('dateTo').value;
+
+        let url = '/api/finance/invoices/?page=1&page_size=100';
+        if (status) url += `&status=${status}`;
+        if (dateFrom) url += `&date_from=${dateFrom}`;
+        if (dateTo) url += `&date_to=${dateTo}`;
+
+        try {
+            const res = await api.get(url);
+            if (res.ok) {
+                const data = await res.json();
+                let invoices = data.results || [];
+
+                // Client-side search filter
+                if (search) {
+                    const lower = search.toLowerCase();
+                    invoices = invoices.filter(inv =>
+                        (inv.student_name && inv.student_name.toLowerCase().includes(lower)) ||
+                        (inv.invoice_number && inv.invoice_number.toLowerCase().includes(lower))
+                    );
+                }
+
+                invoicesData = invoices;
+                renderInvoices();
+            }
+        } catch (e) {
+            console.log('Could not load invoices');
+            showEmptyState();
+        }
+    }
+
+    function renderInvoices() {
+        document.getElementById('loadingState').style.display = 'none';
+
+        if (invoicesData.length === 0) {
+            showEmptyState();
+            return;
+        }
+
+        // Stats
+        const totalAmount = invoicesData.reduce((sum, inv) => sum + (inv.total_amount || 0), 0);
+        const totalPaid = invoicesData.reduce((sum, inv) => sum + (inv.amount_paid || 0), 0);
+        const outstanding = totalAmount - totalPaid;
+        const overdueCount = invoicesData.filter(inv => inv.status === 'overdue').length;
+
+        document.getElementById('totalInvoices').textContent = invoicesData.length;
+        document.getElementById('totalAmount').textContent = formatCurrency(totalAmount);
+        document.getElementById('totalPaid').textContent = formatCurrency(totalPaid);
+        document.getElementById('outstandingAmount').textContent = formatCurrency(outstanding);
+        document.getElementById('overdueCount').textContent = overdueCount;
+
+        document.getElementById('emptyState').style.display = 'none';
+
+        const container = document.getElementById('invoicesContainer');
+        container.innerHTML = '';
+
+        invoicesData.forEach(inv => {
+            const paidPercent = inv.total_amount > 0 ? ((inv.amount_paid || 0) / inv.total_amount * 100) : 0;
+            const isSelected = selectedIds.has(inv.id);
+
+            const card = document.createElement('div');
+            card.className = `invoice-card ${inv.status}`;
+            card.innerHTML = `
+                <div class="invoice-header">
+                    <div>
+                        <div class="invoice-title">${inv.student_name || 'Unknown Student'}</div>
+                        <div class="invoice-number">${inv.invoice_number || `INV-${inv.id}`}</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <span class="status-badge status-${inv.status}">${capitalize(inv.status)}</span>
+                        <div class="invoice-amount" style="margin-top: var(--carbon-spacing-02);">${formatCurrency(inv.total_amount)}</div>
+                    </div>
+                </div>
+                <div class="invoice-details">
+                    <div class="invoice-detail">
+                        <label>Invoice Date</label>
+                        ${inv.invoice_date ? formatDate(inv.invoice_date) : '-'}
+                    </div>
+                    <div class="invoice-detail">
+                        <label>Due Date</label>
+                        ${inv.due_date ? formatDate(inv.due_date) : '-'}
+                    </div>
+                    <div class="invoice-detail">
+                        <label>Amount Paid</label>
+                        ${formatCurrency(inv.amount_paid || 0)}
+                    </div>
+                    <div class="invoice-detail">
+                        <label>Outstanding</label>
+                        ${formatCurrency((inv.total_amount || 0) - (inv.amount_paid || 0))}
+                    </div>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: ${paidPercent}%;"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: var(--carbon-spacing-04);">
+                    <label style="display: flex; align-items: center; gap: var(--carbon-spacing-02); cursor: pointer;">
+                        <input type="checkbox" class="invoice-checkbox" data-id="${inv.id}" ${isSelected ? 'checked' : ''} onchange="toggleSelection(${inv.id})">
+                        Select
+                    </label>
+                    <div class="action-cell">
+                        <button class="cds--btn cds--btn--ghost cds--btn--sm" onclick="viewInvoice(${inv.id})">View</button>
+                        ${inv.status === 'draft' ? `<button class="cds--btn cds--btn--ghost cds--btn--sm" onclick="sendInvoice(${inv.id})">Send</button>` : ''}
+                        <button class="cds--btn cds--btn--ghost cds--btn--sm" onclick="recordPayment(${inv.id})">Record Payment</button>
+                    </div>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    function showEmptyState() {
+        document.getElementById('invoicesContainer').innerHTML = '';
+        document.getElementById('emptyState').style.display = 'block';
+        document.getElementById('totalInvoices').textContent = '-';
+        document.getElementById('totalAmount').textContent = '-';
+        document.getElementById('totalPaid').textContent = '-';
+        document.getElementById('outstandingAmount').textContent = '-';
+        document.getElementById('overdueCount').textContent = '-';
+    }
+
+    function toggleSelection(id) {
+        if (selectedIds.has(id)) {
+            selectedIds.delete(id);
+        } else {
+            selectedIds.add(id);
+        }
+        updateBulkActions();
+    }
+
+    function selectAll() {
+        invoicesData.forEach(inv => selectedIds.add(inv.id));
+        renderInvoices();
+        updateBulkActions();
+    }
+
+    function clearSelection() {
+        selectedIds.clear();
+        renderInvoices();
+        updateBulkActions();
+    }
+
+    function updateBulkActions() {
+        const bar = document.getElementById('bulkActionsBar');
+        if (selectedIds.size > 0) {
+            bar.style.display = 'flex';
+            document.getElementById('selectedCount').textContent = selectedIds.size;
+        } else {
+            bar.style.display = 'none';
+        }
+    }
+
+    async function bulkAction(action) {
+        if (selectedIds.size === 0) {
+            showToast('Please select invoices first', 'warning');
+            return;
+        }
+
+        if (action === 'delete') {
+            if (!confirm(`Delete ${selectedIds.size} selected invoices?`)) return;
+        }
+
+        let success = 0;
+        for (const id of selectedIds) {
+            try {
+                if (action === 'send') {
+                    const res = await api.patch(`/api/finance/invoices/${id}/`, { status: 'sent' });
+                    if (res.ok) success++;
+                } else if (action === 'delete') {
+                    const res = await api.delete(`/api/finance/invoices/${id}/`);
+                    if (res.ok) success++;
+                }
+            } catch (e) { console.log('Error', e); }
+        }
+
+        showToast(`${success} invoices ${action === 'send' ? 'sent' : 'deleted'}`, 'success');
+        selectedIds.clear();
+        loadInvoices();
+    }
+
+    function addItem() {
+        const container = document.getElementById('invoiceItems');
+        const row = document.createElement('div');
+        row.className = 'line-item-row';
+        row.style.cssText = 'display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: var(--carbon-spacing-03); margin-bottom: var(--carbon-spacing-03);';
+        row.innerHTML = `
+            <input type="text" class="cds--text-input item-description" placeholder="Description">
+            <input type="number" class="cds--text-input item-amount" placeholder="Amount" min="0" onchange="calculateTotal()">
+            <select class="cds--select item-fee">
+                <option value="">Select Fee Type...</option>
+                <option value="tuition">Tuition</option>
+                <option value="meals">Meals</option>
+                <option value="transport">Transport</option>
+                <option value="uniform">Uniform</option>
+                <option value="books">Books</option>
+                <option value="other">Other</option>
+            </select>
+            <button type="button" class="cds--btn cds--btn--danger--ghost cds--btn--sm" onclick="removeItem(this)">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M6 2a1 1 0 00-1 1v1H3a1 1 0 100 2h1v7a1 1 0 002 0v-7h1a1 1 0 100-2h-1V3a1 1 0 00-1-1zm2 1v7h2V4H8zM4 3h1v9H4V3z"/></svg>
+            </button>
+        `;
+        container.appendChild(row);
+    }
+
+    function removeItem(btn) {
+        btn.closest('.line-item-row').remove();
+        calculateTotal();
+    }
+
+    function calculateTotal() {
+        let total = 0;
+        document.querySelectorAll('.item-amount').forEach(input => {
+            total += parseFloat(input.value) || 0;
+        });
+        document.getElementById('subtotalAmount').textContent = formatCurrency(total);
+        document.getElementById('totalAmount').textContent = formatCurrency(total);
+    }
+
+    async function saveInvoice(status) {
+        const student = document.getElementById('invoiceStudent').value;
+        const invoiceDate = document.getElementById('invoiceDate').value;
+        const dueDate = document.getElementById('invoiceDueDate').value;
+
+        if (!student || !invoiceDate || !dueDate) {
+            showToast('Please fill in all required fields', 'warning');
+            return;
+        }
+
+        // Collect items
+        const items = [];
+        let total = 0;
+        document.querySelectorAll('.line-item-row').forEach(row => {
+            const desc = row.querySelector('.item-description').value;
+            const amount = parseFloat(row.querySelector('.item-amount').value) || 0;
+            const feeType = row.querySelector('.item-fee').value;
+
+            if (desc && amount > 0) {
+                items.push({ description: desc, amount, fee_type: feeType });
+                total += amount;
+            }
+        });
+
+        if (items.length === 0) {
+            showToast('Please add at least one item', 'warning');
+            return;
+        }
+
+        const data = {
+            student,
+            invoice_date: invoiceDate,
+            due_date: dueDate,
+            status,
+            notes: document.getElementById('invoiceNotes').value,
+            items,
+            total_amount: total
+        };
+
+        try {
+            const res = await api.post('/api/finance/invoices/', data);
+            if (res.ok) {
+                showToast(`Invoice ${status === 'draft' ? 'saved as draft' : 'sent'}!`, 'success');
+                closeModal('createInvoiceModal');
+                loadInvoices();
+            } else {
+                showToast('Failed to create invoice', 'error');
+            }
+        } catch (e) {
+            showToast('Error creating invoice', 'error');
+        }
+    }
+
+    function viewInvoice(id) {
+        const inv = invoicesData.find(i => i.id === id);
+        if (!inv) return;
+
+        const content = document.getElementById('viewInvoiceContent');
+        const outstanding = (inv.total_amount || 0) - (inv.amount_paid || 0);
+
+        content.innerHTML = `
+            <div style="display: flex; justify-content: space-between; margin-bottom: var(--carbon-spacing-05);">
+                <div>
+                    <h4>${inv.student_name || 'Unknown Student'}</h4>
+                    <p style="color: var(--carbon-gray-70);">${inv.invoice_number || `INV-${inv.id}`}</p>
+                </div>
+                <div style="text-align: right;">
+                    <span class="status-badge status-${inv.status}">${capitalize(inv.status)}</span>
+                    <div style="font-size: 1.5rem; font-weight: 600; margin-top: var(--carbon-spacing-02);">${formatCurrency(inv.total_amount)}</div>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--carbon-spacing-04); margin-bottom: var(--carbon-spacing-05);">
+                <div>
+                    <label style="font-size: 0.75rem; color: var(--carbon-gray-70);">Invoice Date</label>
+                    <p>${inv.invoice_date ? formatDate(inv.invoice_date) : '-'}</p>
+                </div>
+                <div>
+                    <label style="font-size: 0.75rem; color: var(--carbon-gray-70);">Due Date</label>
+                    <p>${inv.due_date ? formatDate(inv.due_date) : '-'}</p>
+                </div>
+                <div>
+                    <label style="font-size: 0.75rem; color: var(--carbon-gray-70);">Outstanding</label>
+                    <p style="font-weight: 600; color: ${outstanding > 0 ? 'var(--carbon-red-60)' : 'var(--carbon-green-60)'};">${formatCurrency(outstanding)}</p>
+                </div>
+            </div>
+
+            <h4 style="margin-bottom: var(--carbon-spacing-03);">Payment History</h4>
+            ${inv.payments && inv.payments.length > 0 ? inv.payments.map(p => `
+                <div class="line-item">
+                    <span>${formatDate(p.date)} - ${p.method || 'Payment'}</span>
+                    <span>${formatCurrency(p.amount)}</span>
+                </div>
+            `).join('') : '<p style="color: var(--carbon-gray-70);">No payments recorded.</p>'}
+
+            ${inv.notes ? `<div style="margin-top: var(--carbon-spacing-05); padding-top: var(--carbon-spacing-04); border-top: 1px solid var(--carbon-gray-20);"><label style="font-size: 0.75rem; color: var(--carbon-gray-70);">Notes</label><p>${inv.notes}</p></div>` : ''}
+        `;
+
+        openModal('viewInvoiceModal');
+    }
+
+    async function sendInvoice(id) {
+        try {
+            const res = await api.patch(`/api/finance/invoices/${id}/`, { status: 'sent' });
+            if (res.ok) {
+                showToast('Invoice sent!', 'success');
+                loadInvoices();
+            } else {
+                showToast('Failed to send invoice', 'error');
+            }
+        } catch (e) {
+            showToast('Error sending invoice', 'error');
+        }
+    }
+
+    function recordPayment(id) {
+        showToast('Payment recording coming soon', 'info');
+    }
+
+    function printInvoice() {
+        window.print();
+    }
+
+    // Filter handlers
+    document.getElementById('statusFilter').addEventListener('change', loadInvoices);
+    document.getElementById('searchFilter').addEventListener('input', debounce(loadInvoices, 300));
+    document.getElementById('dateFrom').addEventListener('change', loadInvoices);
+    document.getElementById('dateTo').addEventListener('change', loadInvoices);
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadFilters();
+        loadInvoices();
+        // Set default dates
+        document.getElementById('invoiceDate').value = new Date().toISOString().split('T')[0];
+        const dueDate = new Date();
+        dueDate.setDate(dueDate.getDate() + 30);
+        document.getElementById('invoiceDueDate').value = dueDate.toISOString().split('T')[0];
+    });
+</script>
+{% endblock %}

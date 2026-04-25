@@ -1,0 +1,57 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls %}
+
+{% block bodyclass %}grp{% endblock %}
+{% block content-class %}grp-fluid{% endblock %}
+
+{% block title %}Assign Role to Staff{% endblock %}
+
+{% block content %}
+<div class="grp-container">
+    <h1>Assign Role to Staff Members</h1>
+
+    <div class="grp-row">
+        <div class="grp-col-md-8">
+            <div class="grp-module">
+                <h2>Selected Staff Members ({{ staff_members|length }})</h2>
+                <ul class="grp-list">
+                    {% for staff in staff_members %}
+                    <li>{{ staff.first_name }} {{ staff.last_name }} ({{ staff.email }})</li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="post" value="yes">
+
+                <div class="grp-module">
+                    <h2>Select Role to Assign</h2>
+                    <div class="grp-form-group">
+                        <label for="role_id">Role:</label>
+                        <select name="role_id" id="role_id" class="grp-select" required>
+                            <option value="">-- Select a Role --</option>
+                            {% for role in roles %}
+                            <option value="{{ role.id }}">{{ role.name }} - {{ role.description|truncatechars:50 }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grp-form-actions">
+                    <a href="{% url 'admin:staff_staffprofile_changelist' %}" class="grp-button grp-secondary">Cancel</a>
+                    <input type="submit" value="Assign Role" class="grp-button grp-primary">
+                </div>
+            </form>
+        </div>
+
+        <div class="grp-col-md-4">
+            <div class="grp-module grp-info">
+                <h3>Instructions</h3>
+                <p>Select a role from the dropdown above to assign it to all selected staff members.</p>
+                <p>Each staff member can have multiple roles. Duplicate assignments are automatically skipped.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

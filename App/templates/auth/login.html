@@ -1,0 +1,198 @@
+{% extends 'base.html' %}
+
+{% block title %}Login - Friends of Children SMS{% endblock %}
+
+{% block body %}
+<style>
+    .login-container {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--carbon-gray-100);
+        padding: var(--carbon-spacing-05);
+    }
+    .login-card {
+        background: var(--carbon-white);
+        width: 100%;
+        max-width: 400px;
+        padding: var(--carbon-spacing-08);
+        box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+    .login-header {
+        text-align: center;
+        margin-bottom: var(--carbon-spacing-07);
+    }
+    .login-header h1 {
+        font-size: 1.5rem;
+        font-weight: 300;
+        margin-bottom: var(--carbon-spacing-03);
+    }
+    .login-header p {
+        color: var(--carbon-gray-70);
+        font-size: 0.875rem;
+    }
+    .login-footer {
+        text-align: center;
+        margin-top: var(--carbon-spacing-06);
+        padding-top: var(--carbon-spacing-06);
+        border-top: 1px solid var(--carbon-gray-20);
+    }
+    .login-footer a {
+        color: var(--carbon-blue-60);
+        text-decoration: none;
+        font-size: 0.875rem;
+    }
+    .login-footer a:hover {
+        text-decoration: underline;
+    }
+    .form-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: var(--carbon-spacing-06);
+    }
+    .remember-me {
+        display: flex;
+        align-items: center;
+        gap: var(--carbon-spacing-03);
+        font-size: 0.875rem;
+        color: var(--carbon-gray-70);
+        cursor: pointer;
+    }
+    .remember-me input {
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
+    }
+    .error-message {
+        background: rgba(218,30,40,0.1);
+        border-left: 3px solid var(--carbon-red-60);
+        color: var(--carbon-red-60);
+        padding: var(--carbon-spacing-04);
+        margin-bottom: var(--carbon-spacing-05);
+        font-size: 0.875rem;
+        display: none;
+    }
+</style>
+
+<div class="login-container">
+    <div class="login-card">
+        <div class="login-header">
+            <h1>Friends of Children</h1>
+            <p>School Management System</p>
+        </div>
+
+        <div class="error-message" id="errorMessage"></div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label class="form-label" for="email">Email Address</label>
+                <input type="email" id="email" class="cds--text-input" placeholder="Enter your email" required autocomplete="email">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="password">Password</label>
+                <input type="password" id="password" class="cds--text-input" placeholder="Enter your password" required autocomplete="current-password">
+            </div>
+
+            <label class="remember-me">
+                <input type="checkbox" id="remember">
+                <span>Remember me</span>
+            </label>
+
+            <div class="form-actions">
+                <button type="submit" class="cds--btn cds--btn--primary w-100" id="submitBtn">
+                    Sign In
+                </button>
+            </div>
+        </form>
+
+        <div class="login-footer">
+            <p><a href="/">Back to Home</a></p>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const form = document.getElementById('loginForm');
+        if (!form) return;
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const remember = document.getElementById('remember').checked;
+            const errorMsg = document.getElementById('errorMessage');
+            const submitBtn = document.getElementById('submitBtn');
+
+            errorMsg.style.display = 'none';
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="cds--loading__svg" style="width:20px;height:20px;margin:0"><circle class="cds--loading__stroke" cx="10" cy="10" r="8"/></span> Signing in...';
+
+            try {
+                const response = await fetch('/api/accounts/token/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Store tokens
+                    Auth.setToken(data.access);
+                    Auth.setRefreshToken(data.refresh);
+                    console.log('Tokens stored successfully');
+
+                    // Get user info
+                    const userRes = await api.get('/api/accounts/users/me/');
+                    if (userRes.ok) {
+                        const userData = await userRes.json();
+                        Auth.setUser(userData);
+                        console.log('User data stored:', userData.email);
+                    } else {
+                        console.log('Could not fetch user data, but token is valid');
+                    }
+
+                    Toast.success('Welcome back!');
+
+                    // Redirect to dashboard or intended page
+                    const redirect = new URLSearchParams(window.location.search).get('next') || '/dashboard/';
+                    console.log('Redirecting to:', redirect);
+                    window.location.href = redirect;
+                } else {
+                    errorMsg.textContent = data.detail || 'Invalid email or password';
+                    errorMsg.style.display = 'block';
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Sign In';
+                }
+            } catch (error) {
+                errorMsg.textContent = 'Network error. Please try again.';
+                errorMsg.style.display = 'block';
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Sign In';
+            }
+        });
+
+        // Check if already logged in - redirect to dashboard
+        if (Auth.isLoggedIn()) {
+            console.log('User already has token, verifying...');
+            // Verify token is valid by checking user data
+            api.get('/api/accounts/users/me/').then(res => {
+                if (res.ok) {
+                    console.log('Token valid, redirecting to dashboard');
+                    window.location.href = '/dashboard/';
+                } else {
+                    console.log('Token invalid, staying on login');
+                }
+            }).catch(err => {
+                console.log('Token verification failed:', err);
+                // Token invalid, stay on login page
+            });
+        }
+    });
+</script>
+{% endblock %}

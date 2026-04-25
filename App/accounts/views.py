@@ -5,6 +5,7 @@ Views for Accounts app.
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from django.db import transaction
 from django.utils import timezone
 
@@ -20,6 +21,16 @@ from exams.models import GradeScale, GradeLevel
 from staff.models import StaffProfile
 from parents.models import ParentProfile
 from permissions.models import Role, StaffRole
+
+
+class CurrentUserView(APIView):
+    """Get the currently authenticated user."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        """Return the current user's data."""
+        serializer = UserSerializer(request.user)
+        return Response(serializer.data)
 
 
 # Primary grading scale defaults
@@ -410,83 +421,177 @@ class SchoolSetupView(viewsets.ViewSet):
         })
 
     def create(self, request):
-        """Initialize school academic structure."""
+        """Initialize school academic structure from wizard data."""
+        import sys
+
+        print("="*50, file=sys.stderr)
+        print("SchoolSetupView.create() called", file=sys.stderr)
+        print(f"Method: {request.method}", file=sys.stderr)
+        print(f"Content-Type: {request.content_type}", file=sys.stderr)
+        print(f"Data received: {request.data}", file=sys.stderr)
+        print("="*50, file=sys.stderr)
+
         user = request.user
+        print(f"User: {user}", file=sys.stderr)
 
         try:
             staff_profile = user.staff_profile
             school = staff_profile.school
         except StaffProfile.DoesNotExist:
+            print("ERROR: Staff profile not found", file=sys.stderr)
             return Response(
                 {'error': 'Staff profile not found'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
         if not staff_profile.is_active:
+            print("ERROR: Account not active", file=sys.stderr)
             return Response(
                 {'error': 'Your account is not active'},
                 status=status.HTTP_403_FORBIDDEN
             )
 
+        print(f"School: {school}", file=sys.stderr)
+
         # Check if already initialized
         if AcademicYear.objects.filter(school=school).exists():
+            print("ERROR: School already initialized", file=sys.stderr)
             return Response(
                 {'error': 'School already initialized'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        from datetime import date
-        current_year = timezone.now().year
+        data = request.data
+        print(f"Full data: {data}", file=sys.stderr)
 
-        with transaction.atomic():
-            # Create Academic Year
-            academic_year = AcademicYear.objects.create(
-                school=school,
-                year=current_year,
-                start_date=date(current_year, 1, 1),
-                end_date=date(current_year, 12, 31),
-                is_current=True
-            )
+        year_data = data.get('year', {})
+        terms_data = data.get('terms', [])
+        sections_data = data.get('sections', [])
+        classes_data = data.get('classes', {})
+        subjects_data = data.get('subjects', [])
 
-            # Create 3 Terms
-            term_dates = [
-                (date(current_year, 1, 1), date(current_year, 4, 30)),
-                (date(current_year, 5, 1), date(current_year, 8, 31)),
-                (date(current_year, 9, 1), date(current_year, 12, 31)),
-            ]
-            for i, (start, end) in enumerate(term_dates, 1):
-                Term.objects.create(
-                    academic_year=academic_year,
-                    term_number=i,
-                    start_date=start,
-                    end_date=end,
-                    is_current=(i == 1)
+        print(f"year_data: {year_data}", file=sys.stderr)
+        print(f"terms_data: {terms_data}", file=sys.stderr)
+        print(f"sections_data: {sections_data}", file=sys.stderr)
+        print(f"classes_data: {classes_data}", file=sys.stderr)
+        print(f"subjects_data: {subjects_data}", file=sys.stderr)
+
+        from datetime import datetime, date
+
+        # Parse date strings from wizard
+        def parse_date(date_str, field_name='field'):
+            if date_str is None:
+                raise ValueError(f"{field_name} is required")
+            if isinstance(date_str, str):
+                try:
+                    return datetime.strptime(date_str, '%Y-%m-%d').date()
+                except ValueError:
+                    raise ValueError(f"Invalid date format for {field_name}: {date_str}")
+            return date_str
+
+        try:
+            with transaction.atomic():
+                # Create Academic Year
+                year_value = year_data.get('name', str(timezone.now().year))
+                try:
+                    year_value = int(year_value)
+                except (ValueError, TypeError):
+                    year_value = timezone.now().year
+
+                print(f"Creating AcademicYear with year={year_value}", file=sys.stderr)
+
+                academic_year = AcademicYear.objects.create(
+                    school=school,
+                    year=year_value,
+                    start_date=parse_date(year_data.get('start'), 'Academic year start date'),
+                    end_date=parse_date(year_data.get('end'), 'Academic year end date'),
+                    is_current=True
                 )
 
-            # Create Sections
-            primary_section = Section.objects.create(
-                school=school, name='Primary', order=2
-            )
-            pre_primary = Section.objects.create(
-                school=school, name='Pre-Primary', order=1
-            )
+                # Create Terms from wizard data
+                terms_created = 0
+                for i, term in enumerate(terms_data, 1):
+                    Term.objects.create(
+                        academic_year=academic_year,
+                        term_number=i,
+                        name=term.get('name', f'Term {i}'),
+                        start_date=parse_date(term.get('start'), f'Term {i} start date'),
+                        end_date=parse_date(term.get('end'), f'Term {i} end date'),
+                        is_active=(i == 1)
+                    )
+                    terms_created += 1
 
-            # Create Default Grade Scale for Primary
-            grade_scale = GradeScale.objects.create(
-                school=school,
-                section=primary_section,
-                name='Primary Grading',
-                is_default=True
-            )
-            for grade in PRIMARY_GRADES:
-                GradeLevel.objects.create(
-                    grade_scale=grade_scale,
-                    **grade
-                )
+                # Create Sections and Classes
+                sections_created = 0
+                classes_created = 0
+                section_order = {'pre-primary': 1, 'primary': 2, 'secondary': 3}
 
-        return Response({
-            'message': 'School initialized successfully',
-            'academic_year': academic_year.id,
-            'terms_created': 3,
-            'sections_created': 2,
-        }, status=status.HTTP_201_CREATED)
+                for section_key in sections_data:
+                    section = Section.objects.create(
+                        school=school,
+                        name=section_key.replace('-', ' ').title(),
+                        order=section_order.get(section_key, 99)
+                    )
+                    sections_created += 1
+
+                    # Create Classes for this section
+                    section_classes = classes_data.get(section_key, [])
+                    for class_name in section_classes:
+                        from academic.models import Class
+                        Class.objects.create(
+                            school=school,
+                            section=section,
+                            name=class_name
+                        )
+                        classes_created += 1
+
+                # Create Subjects
+                from academic.models import Subject
+                subjects_created = 0
+                for subject_name in subjects_data:
+                    Subject.objects.create(
+                        school=school,
+                        name=subject_name,
+                        code=subject_name[:3].upper()
+                    )
+                    subjects_created += 1
+
+                # Create Default Grade Scale for Primary section
+                primary_section = Section.objects.filter(school=school, name='Primary').first()
+                if primary_section:
+                    grade_scale = GradeScale.objects.create(
+                        school=school,
+                        section=primary_section,
+                        name='Primary Grading (D1-F9)',
+                        is_default=True
+                    )
+                    for grade in PRIMARY_GRADES:
+                        GradeLevel.objects.create(
+                            grade_scale=grade_scale,
+                            **grade
+                        )
+
+            print("School setup completed successfully!", file=sys.stderr)
+            return Response({
+                'message': 'School initialized successfully',
+                'academic_year': academic_year.id,
+                'terms_created': terms_created,
+                'sections_created': sections_created,
+                'classes_created': classes_created,
+                'subjects_created': subjects_created,
+            }, status=status.HTTP_201_CREATED)
+
+        except ValueError as e:
+            print(f"ValueError: {e}", file=sys.stderr)
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            print(f"Exception: {e}", file=sys.stderr)
+            return Response(
+                {'error': f'Setup failed: {str(e)}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )

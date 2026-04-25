@@ -1,0 +1,271 @@
+{% extends 'base.html' %}
+
+{% block title %}Bulk Enroll Students - Friends of Children SMS{% endblock %}
+
+{% block body %}
+<style>
+    .upload-area { border: 2px dashed var(--carbon-gray-30); border-radius: 4px; padding: 3rem; text-align: center; cursor: pointer; transition: all 240ms; }
+    .upload-area:hover { border-color: var(--carbon-blue-60); background: rgba(15, 98, 254, 0.05); }
+    .upload-area.dragover { border-color: var(--carbon-blue-60); background: rgba(15, 98, 254, 0.1); }
+    .upload-icon { width: 48px; height: 48px; margin: 0 auto var(--carbon-spacing-04); color: var(--carbon-gray-50); }
+    .template-download { display: inline-flex; align-items: center; gap: var(--carbon-spacing-03); margin-top: var(--carbon-spacing-04); padding: var(--carbon-spacing-04); background: var(--carbon-gray-10); border-radius: 4px; }
+    .preview-table { max-height: 400px; overflow-y: auto; margin-top: var(--carbon-spacing-05); }
+    .error-row { background: rgba(218, 30, 40, 0.1); }
+    .success-row { background: rgba(36, 161, 72, 0.1); }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--carbon-spacing-04); margin-bottom: var(--carbon-spacing-05); }
+    .stat-card { background: var(--carbon-gray-10); padding: var(--carbon-spacing-04); border-radius: 4px; text-align: center; }
+    .stat-number { font-size: 2rem; font-weight: 600; }
+    .stat-label { font-size: 0.875rem; color: var(--carbon-gray-70); }
+    .stat-error .stat-number { color: var(--carbon-red-60); }
+    .stat-success .stat-number { color: var(--carbon-green-60); }
+</style>
+
+<header class="page-header">
+    <div class="cds--grid">
+        <h1>Bulk Student Enrollment</h1>
+        <a href="/students/">&larr; Back to Students</a>
+    </div>
+</header>
+
+<div class="main-content">
+    <div class="cds--grid">
+        <!-- Step 1: Upload -->
+        <div id="uploadSection" class="cds--tile">
+            <h3 style="margin-bottom: var(--carbon-spacing-05);">Step 1: Upload Student Data</h3>
+
+            <div class="upload-area" id="dropZone">
+                <svg class="upload-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><path d="M12 18v-6"/><path d="M9 15l3-3 3 3"/></svg>
+                <p><strong>Drop CSV file here</strong> or click to browse</p>
+                <p style="font-size: 0.875rem; color: var(--carbon-gray-70);">Only .csv files are supported</p>
+                <input type="file" id="fileInput" accept=".csv" style="display: none;">
+            </div>
+
+            <div class="template-download">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+                <div>
+                    <p style="font-weight: 500; margin: 0;">Download Template</p>
+                    <p style="font-size: 0.75rem; color: var(--carbon-gray-70); margin: 0;">Required column format for bulk upload</p>
+                </div>
+                <a href="/api/students/template/" class="cds--btn cds--btn--tertiary cds--btn--sm" style="margin-left: auto;">Download CSV</a>
+            </div>
+        </div>
+
+        <!-- Step 2: Preview -->
+        <div id="previewSection" class="cds--tile" style="display: none; margin-top: var(--carbon-spacing-05);">
+            <h3 style="margin-bottom: var(--carbon-spacing-05);">Step 2: Preview Data</h3>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalCount">0</div>
+                    <div class="stat-label">Total Rows</div>
+                </div>
+                <div class="stat-card stat-error">
+                    <div class="stat-number" id="errorCount">0</div>
+                    <div class="stat-label">Errors</div>
+                </div>
+                <div class="stat-card stat-success">
+                    <div class="stat-number" id="validCount">0</div>
+                    <div class="stat-label">Ready to Import</div>
+                </div>
+            </div>
+
+            <div class="preview-table">
+                <table class="cds--data-table">
+                    <thead>
+                        <tr>
+                            <th>Row</th>
+                            <th>First Name</th>
+                            <th>Last Name</th>
+                            <th>Gender</th>
+                            <th>Class</th>
+                            <th>Parent Name</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="previewBody"></tbody>
+                </table>
+            </div>
+
+            <div style="margin-top: var(--carbon-spacing-05); display: flex; justify-content: space-between;">
+                <button class="cds--btn cds--btn--secondary" onclick="resetUpload()">Upload Different File</button>
+                <button class="cds--btn cds--btn--primary" id="importBtn" onclick="importStudents()">
+                    Import <span id="importCount">0</span> Students
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 3: Results -->
+        <div id="resultsSection" class="cds--tile" style="display: none; margin-top: var(--carbon-spacing-05);">
+            <h3 style="margin-bottom: var(--carbon-spacing-05);">Import Results</h3>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="importedCount">0</div>
+                    <div class="stat-label">Successfully Imported</div>
+                </div>
+                <div class="stat-card stat-error">
+                    <div class="stat-number" id="failedCount">0</div>
+                    <div class="stat-label">Failed</div>
+                </div>
+            </div>
+
+            <div id="resultsMessage" style="padding: var(--carbon-spacing-05); border-radius: 4px;"></div>
+
+            <div style="margin-top: var(--carbon-spacing-05);">
+                <a href="/students/" class="cds--btn cds--btn--primary">View All Students</a>
+                <button class="cds--btn cds--btn--secondary" onclick="resetUpload()">Import More Students</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let csvData = [];
+    let validStudents = [];
+
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+
+    // Drag and drop handlers
+    dropZone.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        handleFile(e.dataTransfer.files[0]);
+    });
+    fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
+
+    function handleFile(file) {
+        if (!file || !file.name.endsWith('.csv')) {
+            alert('Please upload a CSV file');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            parseCSV(e.target.result);
+        };
+        reader.readAsText(file);
+    }
+
+    function parseCSV(text) {
+        const lines = text.trim().split('\n');
+        const headers = lines[0].toLowerCase().split(',').map(h => h.trim());
+
+        csvData = [];
+        for (let i = 1; i < lines.length; i++) {
+            const values = lines[i].split(',').map(v => v.trim());
+            if (values.length < 2) continue;
+
+            const row = {};
+            headers.forEach((header, idx) => {
+                row[header] = values[idx] || '';
+            });
+            row._row = i + 1;
+            csvData.push(row);
+        }
+
+        previewData();
+    }
+
+    function previewData() {
+        const tbody = document.getElementById('previewBody');
+        tbody.innerHTML = '';
+        validStudents = [];
+        let errorCount = 0;
+
+        csvData.forEach((row, idx) => {
+            const errors = validateStudent(row);
+            const isValid = errors.length === 0;
+            if (isValid) validStudents.push(row);
+            else errorCount++;
+
+            const tr = document.createElement('tr');
+            if (errors.length > 0) tr.classList.add('error-row');
+            else if (idx < 5) tr.classList.add('success-row');
+
+            tr.innerHTML = `
+                <td>${row._row}</td>
+                <td>${row.first_name || '-'}</td>
+                <td>${row.last_name || '-'}</td>
+                <td>${row.gender || '-'}</td>
+                <td>${row.class || '-'}</td>
+                <td>${row.parent_name || '-'}</td>
+                <td>${errors.length > 0 ? `Error: ${errors[0]}` : 'Ready'}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        document.getElementById('totalCount').textContent = csvData.length;
+        document.getElementById('errorCount').textContent = errorCount;
+        document.getElementById('validCount').textContent = validStudents.length;
+        document.getElementById('importCount').textContent = validStudents.length;
+
+        document.getElementById('uploadSection').style.display = 'none';
+        document.getElementById('previewSection').style.display = 'block';
+        document.getElementById('importBtn').disabled = validStudents.length === 0;
+    }
+
+    function validateStudent(row) {
+        const errors = [];
+        if (!row.first_name) errors.push('First name required');
+        if (!row.last_name) errors.push('Last name required');
+        if (!row.gender) errors.push('Gender required');
+        if (!row.class) errors.push('Class required');
+        return errors;
+    }
+
+    async function importStudents() {
+        const btn = document.getElementById('importBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="cds--loading__svg" style="width:16px;height:16px;margin:0"><circle class="cds--loading__stroke" cx="8" cy="8" r="6"/></span> Importing...';
+
+        let imported = 0;
+        let failed = 0;
+
+        for (const student of validStudents) {
+            try {
+                const res = await api.post('/api/students/students/', {
+                    first_name: student.first_name,
+                    last_name: student.last_name,
+                    gender: student.gender,
+                    class_assign: student.class,
+                    parent_name: student.parent_name,
+                    parent_phone: student.parent_phone,
+                    parent_email: student.parent_email,
+                    relationship: student.relationship,
+                    date_of_birth: student.date_of_birth,
+                });
+
+                if (res.ok) imported++;
+                else failed++;
+            } catch (e) {
+                failed++;
+            }
+        }
+
+        document.getElementById('importedCount').textContent = imported;
+        document.getElementById('failedCount').textContent = failed;
+
+        const message = failed === 0
+            ? `<div style="background: rgba(36, 161, 72, 0.1); padding: var(--carbon-spacing-05); border-radius: 4px; color: var(--carbon-green-60);">All ${imported} students imported successfully!</div>`
+            : `<div style="background: rgba(218, 30, 40, 0.1); padding: var(--carbon-spacing-05); border-radius: 4px; color: var(--carbon-red-60);">${imported} imported, ${failed} failed. Please check the data and try again.</div>`;
+
+        document.getElementById('resultsMessage').innerHTML = message;
+
+        document.getElementById('previewSection').style.display = 'none';
+        document.getElementById('resultsSection').style.display = 'block';
+    }
+
+    function resetUpload() {
+        csvData = [];
+        validStudents = [];
+        fileInput.value = '';
+        document.getElementById('uploadSection').style.display = 'block';
+        document.getElementById('previewSection').style.display = 'none';
+        document.getElementById('resultsSection').style.display = 'none';
+    }
+</script>
+{% endblock %}

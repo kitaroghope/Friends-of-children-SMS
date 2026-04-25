@@ -9,6 +9,12 @@ from .models import Student, Enrollment
 class StudentSerializer(serializers.ModelSerializer):
     """Serializer for Student model."""
     full_name = serializers.CharField(source='get_full_name', read_only=True)
+    current_class = serializers.CharField(read_only=True)
+    parent_name = serializers.CharField(required=False, allow_blank=True)
+    parent_phone = serializers.CharField(required=False, allow_blank=True)
+    parent_email = serializers.EmailField(required=False, allow_blank=True)
+    relationship = serializers.CharField(required=False, allow_blank=True)
+    parents = serializers.SerializerMethodField()
 
     class Meta:
         model = Student
@@ -18,9 +24,15 @@ class StudentSerializer(serializers.ModelSerializer):
             'place_of_birth', 'nationality', 'religion', 'blood_group',
             'status', 'admission_date', 'exit_date', 'exit_reason',
             'photo', 'medical_notes', 'special_needs', 'notes',
+            'parent_name', 'parent_phone', 'parent_email', 'relationship',
+            'current_class', 'parents',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['created_at', 'updated_at']
+
+    def get_parents(self, obj):
+        from parents.serializers import StudentParentSerializer
+        return StudentParentSerializer(obj.student_parents.filter(is_active=True), many=True).data
 
 
 class EnrollmentSerializer(serializers.ModelSerializer):
